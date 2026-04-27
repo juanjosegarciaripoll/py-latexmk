@@ -166,7 +166,7 @@ Secondary: `pip install .` / `uv tool install`.
 |---|---|---|
 | T01 | Project scaffold (pyproject, errors, platform) | `done` |
 | T02 | Config system (TOML loading, Config dataclass) | `done` |
-| T03 | CLI / argparse (all flags, dispatch) | `todo` |
+| T03 | CLI / argparse (all flags, dispatch) | `done` |
 | T04 | Parsers (fls, log, aux, bcf) | `todo` |
 | T05 | Runner (placeholder expansion, subprocess) | `todo` |
 | T06 | FDB read/write | `todo` |

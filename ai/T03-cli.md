@@ -1,5 +1,5 @@
 # T03: CLI / argparse
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T01, T02
 
 ## Goal
