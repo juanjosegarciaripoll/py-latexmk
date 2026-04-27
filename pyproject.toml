@@ -1,0 +1,62 @@
+[project]
+name = "latexmk"
+version = "0.1.0"
+description = "Python port of latexmk"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.uv]
+# managed env — do not edit manually
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["latexmk_py", "tests", "tools"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D203",   # conflicts with D211 (no-blank-line-before-class)
+  "D213",   # conflicts with D212 (multi-line-summary-first-line)
+  "COM812", # conflicts with ruff format
+  "ISC001", # conflicts with ruff format
+  "PLR0911", # parse_log / cli.py legitimately have many return paths
+  "PLR0912", # parse_log / cli.py legitimately have many branches
+  "PLR0913", # cli.py legitimately has many arguments
+  "PLR0915", # parse_log legitimately has many statements
+  "TRY003", # long exception messages are intentional (user-facing)
+  "EM101",  # exception string formatting noise
+  "EM102",  # exception string formatting noise
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004", "ANN", "D"]
+"tools/**" = ["T201"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+enable_error_code = ["redundant-self", "truthy-bool", "ignore-without-code"]
+files = ["latexmk_py", "tests", "tools"]
+
+[tool.basedpyright]
+include = ["latexmk_py", "tests", "tools"]
+typeCheckingMode = "strict"
+reportAny = "error"
+reportExplicitAny = "error"
+reportImplicitOverride = "error"
+reportMissingTypeStubs = "warning"
+pythonVersion = "3.13"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+  "integration: tests requiring external TeX programs",
+  "differential: tests requiring a reference Perl latexmk",
+]
