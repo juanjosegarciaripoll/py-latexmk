@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T01 — Project Scaffold
-**Task file:** [`ai/T01-scaffold.md`](./ai/T01-scaffold.md)
+**Current task:** T02 — Config System
+**Task file:** [`ai/T02-config.md`](./ai/T02-config.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.
@@ -64,7 +64,7 @@ Never disable a check to make the pipeline pass. Fix the root cause.
 
 **Style:** Python 3.13 (`match`, PEP 695 type params, `type X = ...`); `dataclass(slots=True, frozen=True)` for records; composition over inheritance; one public class/function-group per module; `pathlib.Path` everywhere; `subprocess.run([...], check=False)` — never `shell=True` except in `runner.py`; `print()` for user output, `logging` for diagnostics; `encoding="utf-8"` on all file I/O.
 
-**Errors** — hierarchy in `latexmk_py/errors.py`:
+**Errors** — hierarchy in `src/latexmk_py/errors.py`:
 ```
 LatexmkError(Exception)
   ConfigError       # exit 13
@@ -89,7 +89,7 @@ def parse_fls(path: Path) -> FlsResult:
 - Unit: `tests/test_<module>.py`
 - Integration (needs TeX): `tests/integration/test_<scenario>.py` — run with `--runintegration`
 - Fixtures: `tests/fixtures/<category>/`
-- Target ≥ 90% line coverage on `latexmk_py/` (excluding `cli.py` and `__main__.py`)
+- Target ≥ 90% line coverage on `src/latexmk_py/` (excluding `cli.py` and `__main__.py`)
 - Differential vs Perl: `LATEXMK_PERL=/usr/bin/latexmk uv run pytest tests/integration/test_diff.py`
 - Perl bug that we diverge from: write a test, document in `CHANGES.md`, add to `known_divergences.py`
 
@@ -113,7 +113,7 @@ Red CI blocks merge.
 5. Implement in small, type-clean increments.
 6. Run the full local pipeline (§3).
 7. Update `CHANGES.md` with a one-line user-facing summary.
-8. Commit: `feat(parser): port parse_fls` / `fix(rules): handle epstopdf cusdep` / `chore(deps): bump ruff`.
+8. Commit: `feat(parser): port parse_fls` / `fix(rules): handle epstopdf cusdep` / `chore(deps): bump ruff`. No LLM attribution in commit messages (no `Co-Authored-By:` or similar lines).
 9. Mark task `done`: update §0, the task file, and the `PLAN.md` table. Advance to next task.
 
 ## 8. Performance

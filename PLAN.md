@@ -20,8 +20,10 @@ Detailed specs live in `ai/`. Read the relevant task file before implementing.
 
 ## Layout
 
+Standard `src/` layout — the installable package lives under `src/`, not at the repo root.
+
 ```
-latexmk_py/
+src/latexmk_py/
   __init__.py, __main__.py
   cli.py          argparse → Config; dispatch        (T03)
   config.py       Config dataclass, TOML merge       (T02)
@@ -33,16 +35,16 @@ latexmk_py/
   cleaner.py      -c / -C                            (T13)
   viewer.py       -pv / -pvc                         (T16)
   deps.py         -M / -MF / -deps                   (T15)
-  errors.py                                          (T01)
-  platform.py                                        (T01)
+  errors.py                                          (T01 ✓)
+  platform.py                                        (T01 ✓)
 tests/
   conftest.py
   fixtures/       simple/ biblatex/ bibtex/ makeindex/ glossaries/ multichapter/ logs/
   test_*.py
   integration/    test_*.py  known_divergences.py    (T17)
-tools/
-  install.py      install binary                     (T18)
-  release.py      PyInstaller build                  (T18)
+tools/                                               (T18 — does not exist yet)
+  install.py      install binary
+  release.py      PyInstaller build
 latexmk.spec      PyInstaller spec                   (T18)
 latexmk/          Perl reference (READ-ONLY)
 ```
@@ -162,7 +164,7 @@ Secondary: `pip install .` / `uv tool install`.
 
 | # | Task | Status |
 |---|---|---|
-| T01 | Project scaffold (pyproject, errors, platform) | `todo` |
+| T01 | Project scaffold (pyproject, errors, platform) | `done` |
 | T02 | Config system (TOML loading, Config dataclass) | `todo` |
 | T03 | CLI / argparse (all flags, dispatch) | `todo` |
 | T04 | Parsers (fls, log, aux, bcf) | `todo` |

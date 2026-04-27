@@ -1,5 +1,5 @@
 # T01: Project Scaffold
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** nothing
 
 ## Goal
