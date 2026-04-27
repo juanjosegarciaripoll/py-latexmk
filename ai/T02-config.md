@@ -1,5 +1,5 @@
 # T02: Configuration System
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T01
 
 ## Goal

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from latexmk_py.errors import (
     BadOptionsError,
     BuildError,
@@ -27,8 +29,6 @@ def test_default_viewer_returns_string() -> None:
 
 
 def test_config_dirs_return_paths() -> None:
-    from pathlib import Path
-
     assert isinstance(user_config_dir(), Path)
     assert isinstance(system_config_dir(), Path)
     assert user_config_dir().name == "latexmk"
