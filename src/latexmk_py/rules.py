@@ -18,9 +18,6 @@ if TYPE_CHECKING:
     from latexmk_py.config import Config
     from latexmk_py.fdb import FdbRule
 
-# xdvipdfmx is not in CommandsConfig (added in T14); use a safe default here.
-_XDVIPDFMX_CMD = "xdvipdfmx -E -o %D %O %S"
-
 # pdf_mode values (mirrors latexmk.pl lines 1452-1456)
 _PM_PDFLATEX = 1
 _PM_PS = 2
@@ -101,6 +98,41 @@ def compute_md5(path: Path) -> str:
     """
     with path.open("rb") as f:
         return hashlib.file_digest(f, "md5").hexdigest()
+
+
+def _make_special_mode_rules(tex: Path, cfg: Config) -> list[Rule]:
+    """Build rules for postscript_mode=1 or xdv_mode=1 (no pdf_mode / dvi_mode set).
+
+    Mirrors the postscript / xdv branches of ``rdb_initialize_rules`` in
+    ``latexmk.pl`` (lines 3648-3728).
+    """
+    stem = tex.stem
+    d = cfg.directories
+    c = cfg.commands
+    if cfg.build.postscript_mode:
+        # latex → .dvi → dvips → .ps
+        dvi = _out(stem, ".dvi", d.out_dir)
+        ps_ = _out(stem, ".ps", d.out_dir)
+        base = Path(stem)
+        return [
+            Rule(name="latex", kind="primary", command=c.latex, source=tex, dest=dvi, base=base),
+            Rule(
+                name="dvips", kind="postprocess", command=c.dvips, source=dvi, dest=ps_, base=base
+            ),
+        ]
+    if cfg.build.xdv_mode:
+        # xelatex → .xdv only (no xdvipdfmx conversion to PDF)
+        return [
+            Rule(
+                name="xelatex",
+                kind="primary",
+                command=c.xelatex,
+                source=tex,
+                dest=_out(stem, ".xdv", d.out_dir),
+                base=Path(stem),
+            )
+        ]
+    return []
 
 
 def init_rules(
@@ -214,7 +246,7 @@ def init_rules(
                 Rule(
                     name="xdvipdfmx",
                     kind="postprocess",
-                    command=_XDVIPDFMX_CMD,
+                    command=c.xdvipdfmx,
                     source=xdv,
                     dest=pdf,
                     base=base,
@@ -245,6 +277,8 @@ def init_rules(
                 base=Path(stem),
             )
         )
+    else:
+        rules.extend(_make_special_mode_rules(tex, cfg))
 
     if fdb:
         _restore_from_fdb(rules, fdb)

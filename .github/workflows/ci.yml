@@ -65,6 +65,7 @@ jobs:
       #   makeindex                 — makeindex binary (T10)
       #   glossaries                — makeglossaries script + LaTeX styles (T10)
       #   collection-latexrecommended — glossaries deps + commonly needed pkgs
+      #   dvips                     — DVI-to-PS conversion (T14)
       - name: Install TeX Live
         uses: TeX-Live/setup-texlive-action@v4
         with:
@@ -77,6 +78,7 @@ jobs:
             makeindex
             glossaries
             collection-latexrecommended
+            dvips
 
       - name: Run tests (unit + integration)
         run: >-

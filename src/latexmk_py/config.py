@@ -52,6 +52,7 @@ class CommandsConfig:
     dvips: str = "dvips %O -o %D %S"
     dvipdf: str = "dvipdf %O %S %D"
     ps2pdf: str = "ps2pdf %O %S %D"
+    xdvipdfmx: str = "xdvipdfmx -E -o %D %O %S"
     makeglossaries: str = "makeglossaries %O %B"
     print_pdf: str = ""
     print_ps: str = ""

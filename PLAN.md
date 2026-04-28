@@ -177,7 +177,7 @@ Secondary: `pip install .` / `uv tool install`.
 | T11 | Custom dependencies (TOML cusdep) | `done` |
 | T12 | Output & aux directories | `done` |
 | T13 | Cleanup (-c, -C, -CF) | `done` |
-| T14 | DVI / PS modes | `todo` |
+| T14 | DVI / PS modes | `done` |
 | T15 | Dependency output (-M, -deps) | `todo` |
 | T16 | Preview & -pvc | `todo` |
 | T17 | Integration tests | `todo` |

@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T14 — DVI / PS modes
-**Task file:** [`ai/T14-dvi-ps.md`](./ai/T14-dvi-ps.md)
+**Current task:** T15 — Dependency output (-M, -deps)
+**Task file:** [`ai/T15-deps.md`](./ai/T15-deps.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.

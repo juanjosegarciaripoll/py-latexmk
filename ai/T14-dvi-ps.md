@@ -1,5 +1,5 @@
 # T14: DVI and PostScript Modes
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08
 
 ## Goal

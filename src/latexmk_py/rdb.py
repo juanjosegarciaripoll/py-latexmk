@@ -478,6 +478,49 @@ class RuleDatabase:
             )
         return result
 
+    def _run_convergence_loop(self, fdb_path: Path) -> int | None:
+        """Run primary/secondary/cusdep rules to convergence; return 12 on failure.
+
+        Postprocess rules are deliberately excluded: they run once after this
+        loop settles.  Mirrors ``Run_all_rules`` in ``latexmk.pl`` (lines ~3600).
+        """
+        force = self.cfg.force
+        for _iteration in range(self.cfg.build.max_runs):
+            stale = [
+                r
+                for r in self.rules
+                if r.kind != "postprocess" and (r.out_of_date or out_of_date(r, force=force))
+            ]
+            if not stale:
+                return None  # converged cleanly
+            for rule in topo_sort(stale):
+                self._run_rule(rule)
+                if rule.last_result != 0 and not force:
+                    write_fdb(fdb_path, self._rules_to_fdb())
+                    return 12
+                self._update_deps(rule)
+        logger.warning(
+            "latexmk: did not converge after %d runs",
+            self.cfg.build.max_runs,
+        )
+        return None
+
+    def _run_postprocess(self, fdb_path: Path) -> int | None:
+        """Run postprocess rules once after primary convergence; return 12 on failure.
+
+        Postprocess rules (dvips, ps2pdf, xdvipdfmx …) run at most once per
+        build; they are stale when their source (the primary's output) changed.
+        Mirrors the post-convergence step in ``latexmk.pl`` (lines ~3800-3820).
+        """
+        force = self.cfg.force
+        for rule in (r for r in self.rules if r.kind == "postprocess"):
+            if rule.out_of_date or out_of_date(rule, force=force):
+                self._run_rule(rule)
+                if rule.last_result != 0 and not force:
+                    write_fdb(fdb_path, self._rules_to_fdb())
+                    return 12
+        return None
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -500,21 +543,10 @@ class RuleDatabase:
             logger.warning("latexmk: no rules to run for %s", self.tex)
             return 0
 
-        for _iteration in range(self.cfg.build.max_runs):
-            stale = [r for r in self.rules if r.out_of_date or out_of_date(r, force=self.cfg.force)]
-            if not stale:
-                break
-            for rule in topo_sort(stale):
-                self._run_rule(rule)
-                if rule.last_result != 0 and not self.cfg.force:
-                    write_fdb(fdb_path, self._rules_to_fdb())
-                    return 12
-                self._update_deps(rule)
-        else:
-            logger.warning(
-                "latexmk: did not converge after %d runs",
-                self.cfg.build.max_runs,
-            )
+        if (rc := self._run_convergence_loop(fdb_path)) is not None:
+            return rc
+        if (rc := self._run_postprocess(fdb_path)) is not None:
+            return rc
 
         write_fdb(fdb_path, self._rules_to_fdb())
         self._copy_out2dir()
