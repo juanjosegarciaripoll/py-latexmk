@@ -170,7 +170,7 @@ Secondary: `pip install .` / `uv tool install`.
 | T04 | Parsers (fls, log, aux, bcf) | `done` |
 | T05 | Runner (placeholder expansion, subprocess) | `done` |
 | T06 | FDB read/write | `done` |
-| T07 | Rule engine (Rule dataclass, out-of-date, topo-sort) | `todo` |
+| T07 | Rule engine (Rule dataclass, out-of-date, topo-sort) | `done` |
 | T08 | Primary build loop (pdflatex / lualatex / xelatex) | `todo` |
 | T09 | Bibliography (bibtex + biber) | `todo` |
 | T10 | Makeindex & glossaries | `todo` |

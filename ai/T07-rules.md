@@ -1,5 +1,5 @@
 # T07: Rule Engine
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T01, T02, T06
 
 ## Goal
