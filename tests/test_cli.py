@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from latexmk_py.cli import (
-    VERSION,
+    PERL_LATEXMK_VERSION,
     _Flags,  # pyright: ignore[reportPrivateUsage]
     _parse,  # pyright: ignore[reportPrivateUsage]
     _preparse,  # pyright: ignore[reportPrivateUsage]
@@ -53,7 +53,7 @@ def test_version_exits_0(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc_info:
         _run(["-version"])
     assert exc_info.value.code == 0
-    assert f"latexmk version {VERSION}" in capsys.readouterr().out
+    assert f"latexmk version {PERL_LATEXMK_VERSION}" in capsys.readouterr().out
 
 
 def test_v_exits_0() -> None:

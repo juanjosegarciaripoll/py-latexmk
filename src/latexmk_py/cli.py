@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 import sys
 from dataclasses import dataclass, replace
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Literal
 
@@ -23,7 +24,7 @@ from latexmk_py.errors import (
 )
 from latexmk_py.rdb import RuleDatabase
 
-VERSION = "0.1.0"
+PERL_LATEXMK_VERSION = "4.88"
 
 _GO_CLEAN_REBUILD = 2  # go_mode value for -gg: clean then rebuild
 _CLEAN_MODE_FULL = 2
@@ -496,6 +497,15 @@ def _print_dirs(cfg: Config) -> None:
     _out(f"out2_dir: {d.out2_dir or '(same as out_dir)'}")
 
 
+def _python_version_suffix() -> str:
+    """Return optional Python package version suffix for informational output."""
+    try:
+        pkg_version = version("latexmk")
+    except PackageNotFoundError:
+        return ""
+    return f" (python package {pkg_version})"
+
+
 # ── file resolution ───────────────────────────────────────────────────────────
 
 
@@ -564,7 +574,7 @@ def _run(argv: list[str]) -> None:
         _print_help()
         sys.exit(0)
     if flags.want_version:
-        _out(f"latexmk version {VERSION}")
+        _out(f"latexmk version {PERL_LATEXMK_VERSION}{_python_version_suffix()}")
         sys.exit(0)
     if flags.want_showextraoptions:
         _out("No extra *latex passthrough options are defined.")
