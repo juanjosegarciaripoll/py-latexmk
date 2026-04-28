@@ -7,6 +7,7 @@ Mirrors the rdb (rule-database) layer of ``latexmk.pl``
 from __future__ import annotations
 
 import logging
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -27,6 +28,11 @@ if TYPE_CHECKING:
     from latexmk_py.parsers.log import LogResult
 
 logger = logging.getLogger(__name__)
+
+# Auxiliary file extensions moved to aux_dir during TeX Live emulation.
+_AUX_EXTS: frozenset[str] = frozenset(
+    {".aux", ".bbl", ".bcf", ".blg", ".idx", ".ilg", ".ind", ".log", ".lof", ".lot", ".toc", ".fls"}
+)
 
 
 def _file_stat(p: Path) -> tuple[float, int]:
@@ -55,7 +61,35 @@ class RuleDatabase:
         self._rule_map: dict[str, Rule] = {}
 
     # ------------------------------------------------------------------
-    # Private helpers — paths
+    # Private helpers — directory resolution
+    # ------------------------------------------------------------------
+
+    def _out_dir(self) -> Path:
+        """Resolve out_dir from config; defaults to the .tex file's directory."""
+        d = self.cfg.directories.out_dir
+        if not d:
+            return self.tex.parent
+        p = Path(d)
+        return p if p.is_absolute() else self.tex.parent / p
+
+    def _aux_dir(self) -> Path:
+        """Resolve aux_dir from config; defaults to out_dir when unset."""
+        d = self.cfg.directories.aux_dir
+        if not d:
+            return self._out_dir()
+        p = Path(d)
+        return p if p.is_absolute() else self.tex.parent / p
+
+    def _out2_dir(self) -> Path | None:
+        """Resolve out2_dir from config; returns None when unset."""
+        d = self.cfg.directories.out2_dir
+        if not d:
+            return None
+        p = Path(d)
+        return p if p.is_absolute() else self.tex.parent / p
+
+    # ------------------------------------------------------------------
+    # Private helpers — derived file paths
     # ------------------------------------------------------------------
 
     def _fdb_path(self) -> Path:
@@ -65,12 +99,28 @@ class RuleDatabase:
         return Path(out) / name if out else self.tex.parent / name
 
     def _aux_path(self, primary: Rule) -> Path:
-        """Return the .aux path derived from the primary rule's dest."""
+        """Return the .aux path: in aux_dir when set, else from primary's dest."""
+        if self.cfg.directories.aux_dir:
+            return self._aux_dir() / f"{primary.base.name}.aux"
         return primary.dest.with_suffix(".aux")
 
     def _bcf_path(self, primary: Rule) -> Path:
-        """Return the .bcf path derived from the primary rule's dest."""
+        """Return the .bcf path: in aux_dir when set, else from primary's dest."""
+        if self.cfg.directories.aux_dir:
+            return self._aux_dir() / f"{primary.base.name}.bcf"
         return primary.dest.with_suffix(".bcf")
+
+    def _log_path(self, rule: Rule) -> Path:
+        """Return the .log path: in aux_dir when set, else from rule's dest."""
+        if self.cfg.directories.aux_dir:
+            return self._aux_dir() / f"{rule.base.name}.log"
+        return rule.dest.with_suffix(".log")
+
+    def _fls_path(self, rule: Rule) -> Path:
+        """Return the .fls path: in aux_dir when set, else from rule's dest."""
+        if self.cfg.directories.aux_dir:
+            return self._aux_dir() / f"{rule.base.name}.fls"
+        return rule.dest.with_suffix(".fls")
 
     # ------------------------------------------------------------------
     # Private helpers — command options and working directory
@@ -87,6 +137,11 @@ class RuleDatabase:
         out = self.cfg.directories.out_dir.replace("\\", "/")
         if out and rule.kind in ("primary", "postprocess"):
             opts.append(f"-output-directory={out}")
+        # -aux-directory is a MiKTeX extension; skip when emulating (TeX Live).
+        if not self.cfg.directories.emulate_aux_dir:
+            aux = self.cfg.directories.aux_dir.replace("\\", "/")
+            if aux and rule.kind in ("primary", "postprocess"):
+                opts.append(f"-aux-directory={aux}")
         # latex_extra_options are for *latex only, not bibtex/biber/makeindex.
         if rule.kind in ("primary", "postprocess"):
             opts.extend(self.cfg.build.latex_extra_options)
@@ -280,6 +335,51 @@ class RuleDatabase:
                 r.out_of_date = True
 
     # ------------------------------------------------------------------
+    # Private helpers — directory setup and file movement
+    # ------------------------------------------------------------------
+
+    def _setup_dirs(self) -> None:
+        """Create out_dir, aux_dir, and out2_dir before the first rule runs."""
+        self._out_dir().mkdir(parents=True, exist_ok=True)
+        if self.cfg.directories.aux_dir:
+            self._aux_dir().mkdir(parents=True, exist_ok=True)
+        out2 = self._out2_dir()
+        if out2 is not None:
+            out2.mkdir(parents=True, exist_ok=True)
+
+    def _emulate_aux_dir(self) -> None:
+        """Move auxiliary files from out_dir to aux_dir after a primary run.
+
+        Mirrors the TeX Live aux-dir emulation in ``latexmk.pl``
+        (``$emulate_aux_dir``, lines ~4800-4850).  TeX Live's pdflatex ignores
+        ``-aux-directory`` so we move the files ourselves after each run.
+        """
+        if not self.cfg.directories.aux_dir or not self.cfg.directories.emulate_aux_dir:
+            return
+        out = self._out_dir()
+        aux = self._aux_dir()
+        if out == aux:
+            return
+        for p in list(out.iterdir()):
+            if p.suffix in _AUX_EXTS:
+                p.rename(aux / p.name)
+
+    def _copy_out2dir(self) -> None:
+        """Copy primary/postprocess output files to out2_dir after a build.
+
+        Mirrors ``copy_files_to_out2`` in ``latexmk.pl``.
+        """
+        out2 = self._out2_dir()
+        if out2 is None:
+            return
+        out2.mkdir(parents=True, exist_ok=True)
+        for rule in self.rules:
+            if rule.kind in ("primary", "postprocess"):
+                for p in [rule.dest, *rule.extra_dests]:
+                    if p.exists():
+                        shutil.copy2(p, out2 / p.name)
+
+    # ------------------------------------------------------------------
     # Private helpers — run and dependency update
     # ------------------------------------------------------------------
 
@@ -322,6 +422,10 @@ class RuleDatabase:
             if p.exists():
                 rule.dest_md5[p] = compute_md5(p)
 
+        # TeX Live emulation: move aux files to aux_dir after each primary run.
+        if rule.kind == "primary":
+            self._emulate_aux_dir()
+
     def _update_deps(self, rule: Rule) -> None:
         """Parse .fls / .log (primary) or mark primaries stale (secondary/cusdep).
 
@@ -336,15 +440,13 @@ class RuleDatabase:
     def _update_primary_deps(self, rule: Rule) -> None:
         """Parse .fls and .log to update a primary rule's dependency sets."""
         if self.cfg.build.recorder:
-            fls_path = rule.dest.with_suffix(".fls")
-            fls_result = parse_fls(fls_path)
+            fls_result = parse_fls(self._fls_path(rule))
             tex_dir = self.tex.parent
             for p in fls_result.inputs:
                 rule.extra_sources.add(p if p.is_absolute() else tex_dir / p)
             rule.extra_dests.update(fls_result.outputs)
 
-        log_path = rule.dest.with_suffix(".log")
-        log_result = parse_log(log_path)
+        log_result = parse_log(self._log_path(rule))
         if log_result.rerun_needed:
             rule.out_of_date = True
         if self.cfg.custom_deps:
@@ -392,6 +494,7 @@ class RuleDatabase:
         fdb = read_fdb(fdb_path)
         self.rules = init_rules(self.tex, self.cfg, fdb)
         self._rule_map = {r.name: r for r in self.rules}
+        self._setup_dirs()
 
         if not self.rules:
             logger.warning("latexmk: no rules to run for %s", self.tex)
@@ -414,6 +517,7 @@ class RuleDatabase:
             )
 
         write_fdb(fdb_path, self._rules_to_fdb())
+        self._copy_out2dir()
         return 0
 
     def watch(self) -> int:

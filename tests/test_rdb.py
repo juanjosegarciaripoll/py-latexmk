@@ -735,3 +735,133 @@ def test_mock_build_with_cusdep(tmp_path: Path) -> None:
 
     assert result == 0
     assert any("fig2dev" in c for c in run_calls), "cusdep converter should have run"
+
+
+# ---------------------------------------------------------------------------
+# T12: output & aux directories
+# ---------------------------------------------------------------------------
+
+
+def test_setup_dirs_creates_out_dir(tmp_path: Path) -> None:
+    out = tmp_path / "build"
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out)))
+    with _mock_build():
+        RuleDatabase(tex, cfg).build()
+    assert out.is_dir()
+
+
+def test_setup_dirs_creates_aux_dir(tmp_path: Path) -> None:
+    out = tmp_path / "build"
+    aux = tmp_path / "aux"
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out), aux_dir=str(aux)))
+    with _mock_build():
+        RuleDatabase(tex, cfg).build()
+    assert aux.is_dir()
+
+
+def test_setup_dirs_creates_out2_dir(tmp_path: Path) -> None:
+    out = tmp_path / "build"
+    out2 = tmp_path / "dist"
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out), out2_dir=str(out2)))
+    with _mock_build():
+        RuleDatabase(tex, cfg).build()
+    assert out2.is_dir()
+
+
+def test_emulate_aux_dir_moves_files(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    aux = tmp_path / "aux"
+    out.mkdir()
+    aux.mkdir()
+    for ext in (".aux", ".log", ".toc"):
+        (out / f"doc{ext}").write_bytes(b"content")
+    (out / "doc.pdf").write_bytes(b"%PDF")
+
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out), aux_dir=str(aux)))
+    rdb = RuleDatabase(tex, cfg)
+    rdb._emulate_aux_dir()  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+
+    assert (aux / "doc.aux").exists()
+    assert (aux / "doc.log").exists()
+    assert (aux / "doc.toc").exists()
+    assert (out / "doc.pdf").exists()
+    assert not (out / "doc.aux").exists()
+
+
+def test_emulate_aux_dir_no_op_when_same_dir(tmp_path: Path) -> None:
+    (tmp_path / "doc.aux").write_bytes(b"content")
+    tex = _make_tex(tmp_path)
+    rdb = RuleDatabase(tex, _default_cfg(tmp_path))
+    rdb._emulate_aux_dir()  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert (tmp_path / "doc.aux").exists()
+
+
+def test_emulate_disabled_when_emulate_false(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    aux = tmp_path / "aux"
+    out.mkdir()
+    aux.mkdir()
+    (out / "doc.aux").write_bytes(b"content")
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(out), aux_dir=str(aux), emulate_aux_dir=False)
+    )
+    RuleDatabase(tex, cfg)._emulate_aux_dir()  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert (out / "doc.aux").exists()
+
+
+def test_aux_directory_in_opts_when_not_emulating(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    out = str(tmp_path / "out")
+    aux = str(tmp_path / "aux")
+    cfg = Config(directories=DirectoriesConfig(out_dir=out, aux_dir=aux, emulate_aux_dir=False))
+    rdb = RuleDatabase(tex, cfg)
+    rule = init_rules(tex, cfg)[0]
+    opts = rdb._build_extra_opts(rule)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(o.startswith("-aux-directory=") for o in opts)
+
+
+def test_aux_directory_not_in_opts_when_emulating(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    out = str(tmp_path / "out")
+    aux = str(tmp_path / "aux")
+    cfg = Config(directories=DirectoriesConfig(out_dir=out, aux_dir=aux, emulate_aux_dir=True))
+    rdb = RuleDatabase(tex, cfg)
+    rule = init_rules(tex, cfg)[0]
+    opts = rdb._build_extra_opts(rule)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(o.startswith("-aux-directory=") for o in opts)
+
+
+def test_copy_out2dir_copies_pdf(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    out2 = tmp_path / "dist"
+    out.mkdir()
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out), out2_dir=str(out2)))
+    with _mock_build():
+        RuleDatabase(tex, cfg).build()
+    assert (out2 / "doc.pdf").exists()
+
+
+def test_aux_path_uses_aux_dir(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    aux = tmp_path / "aux"
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out), aux_dir=str(aux)))
+    rdb = RuleDatabase(tex, cfg)
+    rule = init_rules(tex, cfg)[0]
+    assert rdb._aux_path(rule) == aux / "doc.aux"  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+
+
+def test_log_path_uses_aux_dir(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    aux = tmp_path / "aux"
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(out), aux_dir=str(aux)))
+    rdb = RuleDatabase(tex, cfg)
+    rule = init_rules(tex, cfg)[0]
+    assert rdb._log_path(rule) == aux / "doc.log"  # noqa: SLF001  # type: ignore[reportPrivateUsage]

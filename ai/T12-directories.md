@@ -1,5 +1,5 @@
 # T12: Output & Auxiliary Directories
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08
 
 ## Goal
