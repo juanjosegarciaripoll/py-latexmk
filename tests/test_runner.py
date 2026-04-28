@@ -43,31 +43,32 @@ def _write_script(tmp_path: Path, name: str, code: str) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# expand_placeholders — individual tokens
+# expand_placeholders — filepath tokens are always double-quoted (like Perl)
 # ---------------------------------------------------------------------------
 
 
 def test_expand_token_source() -> None:
-    assert _expand("%S") == str(_BASE / "main.tex")
+    assert _expand("%S") == f'"{_BASE / "main.tex"}"'
 
 
 def test_expand_token_dest() -> None:
-    assert _expand("%D") == str(_BASE / "main.pdf")
+    assert _expand("%D") == f'"{_BASE / "main.pdf"}"'
 
 
 def test_expand_token_base() -> None:
-    assert _expand("%B") == "main"
+    assert _expand("%B") == '"main"'
 
 
 def test_expand_token_root() -> None:
-    assert _expand("%R", root=_BASE / "root.tex") == "root"
+    assert _expand("%R", root=_BASE / "root.tex") == '"root"'
 
 
 def test_expand_token_maintex() -> None:
-    assert _expand("%T", main_tex=_BASE / "doc.tex") == str(_BASE / "doc.tex")
+    assert _expand("%T", main_tex=_BASE / "doc.tex") == f'"{_BASE / "doc.tex"}"'
 
 
 def test_expand_opts_empty() -> None:
+    # %O is never quoted — it is already shlex.join'd by the caller
     assert _expand("%O") == ""
 
 
@@ -81,19 +82,20 @@ def test_expand_opts_multiple() -> None:
 
 
 def test_expand_auxdir_empty() -> None:
-    assert _expand("%Y") == ""
+    # Empty aux_dir → "" (quoted empty string), matching Perl's $quote.$aux_dir1.$quote
+    assert _expand("%Y") == '""'
 
 
 def test_expand_auxdir_set() -> None:
-    assert _expand("%Y", aux_dir="build") == "build/"
+    assert _expand("%Y", aux_dir="build") == '"build/"'
 
 
 def test_expand_outdir_empty() -> None:
-    assert _expand("%Z") == ""
+    assert _expand("%Z") == '""'
 
 
 def test_expand_outdir_set() -> None:
-    assert _expand("%Z", out_dir="out") == "out/"
+    assert _expand("%Z", out_dir="out") == '"out/"'
 
 
 def test_expand_combined_template() -> None:
@@ -104,11 +106,17 @@ def test_expand_combined_template() -> None:
         out_dir="build",
         source=src,
     )
-    assert result == f"pdflatex -synctex=1 -output-directory=build/ {src}"
+    assert result == f'pdflatex -synctex=1 -output-directory="build/" "{src}"'
+
+
+def test_expand_adjacent_tokens_combine_correctly() -> None:
+    # %Y%B is a path-prefix pattern: "build/""main" → shlex/CreateProcess joins as build/main
+    result = _expand("%Y%B", aux_dir="build")
+    assert result == '"build/""main"'
 
 
 # ---------------------------------------------------------------------------
-# expand_placeholders — space-quoting (platform-neutral: use str() for paths)
+# expand_placeholders — space handling and pre-quoted tokens
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +126,8 @@ def test_space_in_source_gets_quoted() -> None:
     assert result == f'"{src}"'
 
 
-def test_space_in_source_already_quoted_not_double_quoted() -> None:
+def test_already_quoted_token_not_double_quoted() -> None:
+    # Template has "%S" — the expansion must NOT produce ""/my docs/main.tex""
     src = Path("/my docs/main.tex")
     result = _expand('"%S"', source=src)
     assert result == f'"{src}"'
@@ -140,9 +149,11 @@ def test_space_in_out_dir_gets_quoted() -> None:
     assert result == '"my out/"'
 
 
-def test_no_space_no_quotes() -> None:
+def test_path_tokens_always_quoted() -> None:
+    # Filepath tokens are always double-quoted, even when the value has no spaces
     result = _expand("%S", source=Path("/proj/main.tex"))
-    assert '"' not in result
+    assert result.startswith('"')
+    assert result.endswith('"')
 
 
 # ---------------------------------------------------------------------------

@@ -37,18 +37,18 @@ class RunResult:
 
 
 def _substitute_path(template: str, token: str, value: str) -> str:
-    """Replace token in template, double-quoting value when it contains spaces.
+    """Replace token in template, always wrapping the value in double-quotes.
 
-    When the expanded value contains a space the replacement is always
-    ``"value"`` whether the token appeared bare or already inside ``"..."``
-    in the template.  The two-step order prevents bare replacements from
-    double-quoting an occurrence that was already quoted in the template.
+    Mirrors ``Run_subst`` in ``latexmk.pl`` (line 10607): every filepath
+    token is substituted as ``$quote . $value . $quote`` where ``$quote``
+    is ``"`` by default (``$quote_filenames = 1``).
+
+    Two-step order: replace ``"token"`` occurrences first so that a bare
+    replacement in step 2 does not re-quote an already-quoted position.
+    Adjacent quoted expansions (e.g. ``%Y%B``) are joined correctly by both
+    POSIX ``shlex.split`` and Windows ``CommandLineToArgvW``.
     """
-    if " " not in value:
-        return template.replace(token, value)
-    # Step 1: already-quoted occurrences — replace "%S" → "value" (keep quotes).
     result = template.replace(f'"{token}"', f'"{value}"')
-    # Step 2: bare occurrences — wrap value in quotes.
     return result.replace(token, f'"{value}"')
 
 
@@ -120,7 +120,11 @@ def run_command(
     if use_shell:
         cmd: str | list[str] = cmd_str
     elif sys.platform == "win32":
-        cmd = shlex.split(cmd_str, posix=False)
+        # Pass as string so CreateProcess + CommandLineToArgvW handle quoting.
+        # shlex.split(posix=False) keeps quotes inside tokens, which then get
+        # double-escaped by list2cmdline, causing programs to receive literal
+        # quote characters in their arguments.
+        cmd = cmd_str
     else:
         cmd = shlex.split(cmd_str)
 
