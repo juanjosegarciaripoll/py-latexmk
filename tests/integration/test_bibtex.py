@@ -18,14 +18,16 @@ _FIXTURES = Path(__file__).parent.parent / "fixtures" / "bibtex"
 
 @pytest.mark.integration
 def test_bibtex_basic(tmp_path: Path) -> None:
-    """pdflatex + bibtex produces a PDF and a .bbl file."""
+    """pdflatex + bibtex produces a PDF and a bibliography .bbl file."""
     shutil.copy(_FIXTURES / "main.tex", tmp_path / "main.tex")
     shutil.copy(_FIXTURES / "refs.bib", tmp_path / "refs.bib")
     cfg = Config(directories=DirectoriesConfig(out_dir=str(tmp_path)))
     rdb = RuleDatabase(tmp_path / "main.tex", cfg)
     assert rdb.build() == 0
     assert (tmp_path / "main.pdf").exists()
-    assert (tmp_path / "main.bbl").exists()
+    bbl = tmp_path / "main.bbl"
+    assert bbl.exists()
+    assert "\\bibitem{ref1}" in bbl.read_text(encoding="utf-8")
 
 
 @pytest.mark.integration

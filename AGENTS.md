@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T17 — Integration tests
-**Task file:** [`ai/T17-integration-tests.md`](./ai/T17-integration-tests.md)
+**Current task:** T18 — Distribution (PyInstaller, install.py)
+**Task file:** [`ai/T18-distribution.md`](./ai/T18-distribution.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.
@@ -140,3 +140,4 @@ No output-byte-identity with Perl latexmk except `--help`, `--version`, `-comman
 2. Check `latexmk.pl` for the subroutine; obey its semantics over your intuition.
 3. Perl genuinely buggy: write a test, document under "Intentional divergences" in `CHANGES.md`, proceed.
 4. Still unsure: leave `TODO(name): question` and open a discussion. Don't silently guess.
+

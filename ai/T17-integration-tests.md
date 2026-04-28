@@ -1,5 +1,5 @@
 # T17: Integration Tests
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08–T16 (run as individual tasks complete)
 
 ## Goal
@@ -148,12 +148,13 @@ Target ≥ 90% line coverage on `latexmk_py/` excluding `__main__.py` and CLI
 dispatch in `cli.py`.
 
 ## Checklist
-- [ ] All fixture .tex files created and compile with pdflatex
-- [ ] `test_simple.py`: build, incremental, force, cleanup
-- [ ] `test_bibtex.py`: bibtex triggered, .bbl produced, PDF has bibliography
-- [ ] `test_biber.py`: biber triggered, .bbl produced
-- [ ] `test_makeindex.py`: makeindex triggered, .ind produced
-- [ ] `test_glossaries.py`: makeglossaries triggered
-- [ ] `test_pvc.py`: file change triggers rebuild (use threading or subprocess)
-- [ ] Coverage ≥ 85%
-- [ ] Differential test infrastructure in place (passes if LATEXMK_PERL set)
+- [x] All fixture .tex files created and compile with pdflatex
+- [x] `test_simple.py`: build, incremental, force, cleanup
+- [x] `test_bibtex.py`: bibtex triggered, .bbl produced, PDF has bibliography
+- [x] `test_biber.py`: biber triggered, .bbl produced
+- [x] `test_makeindex.py`: makeindex triggered, .ind produced
+- [x] `test_glossaries.py`: makeglossaries triggered
+- [x] `test_pvc.py`: file change triggers rebuild (use threading or subprocess)
+- [x] Coverage ≥ 85%
+- [x] Differential test infrastructure in place (passes if LATEXMK_PERL set)
+

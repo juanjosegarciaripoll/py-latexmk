@@ -180,5 +180,6 @@ Secondary: `pip install .` / `uv tool install`.
 | T14 | DVI / PS modes | `done` |
 | T15 | Dependency output (-M, -deps) | `done` |
 | T16 | Preview & -pvc | `done` |
-| T17 | Integration tests | `todo` |
+| T17 | Integration tests | `done` |
 | T18 | Distribution (PyInstaller, install.py) | `todo` |
+

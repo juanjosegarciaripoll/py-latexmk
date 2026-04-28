@@ -66,6 +66,7 @@ jobs:
       #   glossaries                — makeglossaries script + LaTeX styles (T10)
       #   collection-latexrecommended — glossaries deps + commonly needed pkgs
       #   dvips                     — DVI-to-PS conversion (T14)
+      #   latexmk                   — Perl reference implementation (T17 differential)
       - name: Install TeX Live
         uses: TeX-Live/setup-texlive-action@v4
         with:
@@ -79,6 +80,7 @@ jobs:
             glossaries
             collection-latexrecommended
             dvips
+            latexmk
 
       - name: Run tests (unit + integration)
         run: >-
