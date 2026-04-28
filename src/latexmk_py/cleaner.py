@@ -75,9 +75,7 @@ def _affected_dirs(tex: Path, cfg: Config) -> list[Path]:
     """Return unique search directories for cleanup: out_dir, aux_dir, tex.parent."""
     tex_parent = tex.parent
     candidates: list[Path] = [
-        _resolve_dir(d, tex_parent)
-        for d in (cfg.directories.out_dir, cfg.directories.aux_dir)
-        if d
+        _resolve_dir(d, tex_parent) for d in (cfg.directories.out_dir, cfg.directories.aux_dir) if d
     ] + [tex_parent]
 
     seen: set[Path] = set()
