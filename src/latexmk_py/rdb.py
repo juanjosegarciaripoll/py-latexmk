@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from latexmk_py.deps import write_deps
 from latexmk_py.errors import FileMissingError
 from latexmk_py.fdb import FdbFileEntry, FdbRule, read_fdb, write_fdb
 from latexmk_py.parsers.bcf import parse_bcf
@@ -550,6 +551,8 @@ class RuleDatabase:
 
         write_fdb(fdb_path, self._rules_to_fdb())
         self._copy_out2dir()
+        if self.cfg.deps.enabled:
+            write_deps(self.rules, self.cfg.deps, self.tex)
         return 0
 
     def watch(self) -> int:

@@ -19,6 +19,7 @@ from latexmk_py.config import (
     BuildConfig,
     Config,
     CustomDep,
+    DepsConfig,
     DirectoriesConfig,
     OutputConfig,
 )
@@ -299,6 +300,22 @@ def test_build_no_stale_after_first_run_with_no_rerun(tmp_path: Path) -> None:
     with _mock_build() as mock_run:
         RuleDatabase(tex, cfg).build()
     assert mock_run.call_count == 1
+
+
+def test_build_calls_write_deps_when_enabled(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = replace(_default_cfg(tmp_path), deps=DepsConfig(enabled=True))
+    with _mock_build(), patch("latexmk_py.rdb.write_deps") as mock_write_deps:
+        assert RuleDatabase(tex, cfg).build() == 0
+    assert mock_write_deps.call_count == 1
+
+
+def test_build_does_not_call_write_deps_when_disabled(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = _default_cfg(tmp_path)
+    with _mock_build(), patch("latexmk_py.rdb.write_deps") as mock_write_deps:
+        assert RuleDatabase(tex, cfg).build() == 0
+    assert mock_write_deps.call_count == 0
 
 
 # ---------------------------------------------------------------------------

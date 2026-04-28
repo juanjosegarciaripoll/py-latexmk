@@ -1,5 +1,5 @@
 # T15: Dependency Output (-M, -deps)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08
 
 ## Goal
@@ -89,10 +89,10 @@ def write_deps(rules, cfg, tex):
 `write_deps` is called at the end of `build()` when `cfg.deps.enabled`.
 
 ## Checklist
-- [ ] Output matches `make` dependency syntax
-- [ ] Space escaping: `none`, `unix`, `nmake`
-- [ ] Phony targets emitted when `phony=True`
-- [ ] `-MF FILE` writes to file not stdout
-- [ ] All rule sources included in dep list
-- [ ] `uv run pytest tests/test_deps.py -q`
-- [ ] Type-clean
+- [x] Output matches `make` dependency syntax
+- [x] Space escaping: `none`, `unix`, `nmake`
+- [x] Phony targets emitted when `phony=True`
+- [x] `-MF FILE` writes to file not stdout
+- [x] All rule sources included in dep list
+- [x] `uv run pytest tests/test_deps.py -q`
+- [x] Type-clean
