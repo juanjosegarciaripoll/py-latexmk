@@ -221,5 +221,8 @@ __marimo__/
 
 latexmk/
 
+# Claude Code local settings (machine-specific, never commit)
+.claude/
+
 # Test fixtures must be tracked even though *.log is excluded above
 !tests/fixtures/**
