@@ -224,9 +224,7 @@ def test_build_force_continues_after_failure(tmp_path: Path) -> None:
         assert RuleDatabase(tex, cfg).build() == 0
 
 
-def test_build_silent_suppresses_output(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_build_silent_suppresses_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     tex = _make_tex(tmp_path)
     cfg = replace(_default_cfg(tmp_path), output=OutputConfig(silent=True))
     with _mock_build():
@@ -278,9 +276,7 @@ def test_build_reruns_when_log_says_rerun(tmp_path: Path) -> None:
     assert mock_run.call_count == 2
 
 
-def test_build_warns_on_no_convergence(
-    tmp_path: Path, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_build_warns_on_no_convergence(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     tex = _make_tex(tmp_path)
     cfg = replace(_default_cfg(tmp_path), build=BuildConfig(max_runs=2))
     with _mock_build(rerun=True), caplog.at_level("WARNING"):
@@ -323,9 +319,7 @@ def test_integration_fdb_written(tmp_path: Path) -> None:
 
 
 @pytest.mark.integration
-def test_integration_second_run_no_op(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_integration_second_run_no_op(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     src = _FIXTURES_SIMPLE / "hello.tex"
     tex = tmp_path / "hello.tex"
     shutil.copy(src, tex)
@@ -337,9 +331,7 @@ def test_integration_second_run_no_op(
 
 
 @pytest.mark.integration
-def test_integration_touch_reruns(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_integration_touch_reruns(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     src = _FIXTURES_SIMPLE / "hello.tex"
     tex = tmp_path / "hello.tex"
     shutil.copy(src, tex)
@@ -353,9 +345,7 @@ def test_integration_touch_reruns(
 
 
 @pytest.mark.integration
-def test_integration_force_reruns(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_integration_force_reruns(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     src = _FIXTURES_SIMPLE / "hello.tex"
     tex = tmp_path / "hello.tex"
     shutil.copy(src, tex)
