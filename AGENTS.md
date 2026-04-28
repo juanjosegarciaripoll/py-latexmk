@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T08 — Primary build loop (pdflatex / lualatex / xelatex)
-**Task file:** [`ai/T08-build-loop.md`](./ai/T08-build-loop.md)
+**Current task:** T09 — Bibliography (bibtex + biber)
+**Task file:** [`ai/T09-bibliography.md`](./ai/T09-bibliography.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.

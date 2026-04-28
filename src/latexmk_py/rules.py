@@ -85,6 +85,8 @@ def _restore_from_fdb(rules: list[Rule], fdb: dict[str, FdbRule]) -> None:
             rule.source_md5[entry.path] = entry.md5
         if rule.dest.exists():
             rule.dest_md5[rule.dest] = compute_md5(rule.dest)
+        # Prior state restored: clear the flag so MD5 checks govern freshness.
+        rule.out_of_date = False
 
 
 # ---------------------------------------------------------------------------

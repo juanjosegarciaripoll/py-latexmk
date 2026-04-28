@@ -1,5 +1,5 @@
 # T08: Primary Build Loop (pdflatex / lualatex / xelatex)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T02, T03, T04, T05, T06, T07
 
 ## Goal
