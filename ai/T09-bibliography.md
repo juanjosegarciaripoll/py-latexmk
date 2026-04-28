@@ -1,5 +1,5 @@
 # T09: Bibliography (BibTeX + Biber)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08
 
 ## Goal

@@ -14,8 +14,10 @@ import pytest
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-from latexmk_py.config import BuildConfig, Config, DirectoriesConfig, OutputConfig
+from latexmk_py.config import BibtexConfig, BuildConfig, Config, DirectoriesConfig, OutputConfig
 from latexmk_py.errors import FileMissingError
+from latexmk_py.parsers.bcf import BcfResult
+from latexmk_py.parsers.dotaux import AuxResult
 from latexmk_py.parsers.fls import FlsResult
 from latexmk_py.parsers.log import LogResult
 from latexmk_py.rdb import RuleDatabase
@@ -355,3 +357,178 @@ def test_integration_force_reruns(tmp_path: Path, capsys: pytest.CaptureFixture[
     capsys.readouterr()
     RuleDatabase(tex, cfg_force).build()
     assert "applying rule 'pdflatex'" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# Secondary rule detection — unit tests
+# ---------------------------------------------------------------------------
+
+
+def _rdb_with_primary(tmp_path: Path) -> RuleDatabase:
+    """RuleDatabase pre-loaded with one primary pdflatex rule."""
+    tex = _make_tex(tmp_path)
+    cfg = _default_cfg(tmp_path)
+    rdb = RuleDatabase(tex, cfg)
+    rules = init_rules(tex, cfg)
+    rdb.rules = rules
+    rdb._rule_map = {r.name: r for r in rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    return rdb
+
+
+def test_bibtex_rule_added_when_bib_exists(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(r.name == "bibtex_doc" for r in rdb.rules)
+
+
+def test_bibtex_rule_not_added_when_use_0(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        bibtex=BibtexConfig(use=0.0),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    primary = rdb.rules[0]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name == "bibtex_doc" for r in rdb.rules)
+
+
+def test_bibtex_rule_not_added_when_bib_missing(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    # refs.bib intentionally absent
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name == "bibtex_doc" for r in rdb.rules)
+
+
+def test_bibtex_rule_added_for_use_2_without_bib(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        bibtex=BibtexConfig(use=2.0),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    primary = rdb.rules[0]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(r.name == "bibtex_doc" for r in rdb.rules)
+
+
+def test_biber_rule_added_when_bcf_nonempty(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.bcf").write_bytes(b"<xml/>")
+    with patch("latexmk_py.rdb.parse_bcf", return_value=BcfResult(data_sources=frozenset())):
+        rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(r.name == "biber_doc" for r in rdb.rules)
+
+
+def test_biber_not_added_when_bcf_empty(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.bcf").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name == "biber_doc" for r in rdb.rules)
+
+
+def test_biber_takes_priority_over_bibtex(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.bcf").write_bytes(b"<xml/>")
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    with patch("latexmk_py.rdb.parse_bcf", return_value=BcfResult(data_sources=frozenset())):
+        rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    names = [r.name for r in rdb.rules]
+    assert "biber_doc" in names
+    assert "bibtex_doc" not in names
+
+
+def test_bibtex_rule_not_added_twice(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert sum(1 for r in rdb.rules if r.name == "bibtex_doc") == 1
+
+
+def test_rule_cwd_secondary_fudge(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = _default_cfg(tmp_path)
+    rdb = RuleDatabase(tex, cfg)
+    rules = init_rules(tex, cfg)
+    secondary = replace(rules[0], kind="secondary")
+    assert rdb._rule_cwd(secondary) == tex.parent  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+
+
+def test_rule_cwd_secondary_no_fudge(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        bibtex=BibtexConfig(fudge=False),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    rules = init_rules(tex, cfg)
+    secondary = replace(rules[0], kind="secondary")
+    assert rdb._rule_cwd(secondary) is None  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+
+
+def test_latex_extra_options_not_forwarded_to_secondary(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        build=BuildConfig(latex_extra_options=("-synctex=1",)),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    rules = init_rules(tex, cfg)
+    secondary = replace(rules[0], kind="secondary")
+    opts = rdb._build_extra_opts(secondary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert "-synctex=1" not in opts
+
+
+def test_mock_build_with_bibtex_secondary(tmp_path: Path) -> None:
+    """Full build loop adds bibtex rule and both primary+secondary run."""
+    tex = _make_tex(tmp_path)
+    cfg = _default_cfg(tmp_path)
+    bib = tmp_path / "refs.bib"
+    bib.write_bytes(b"")
+    bbl = tmp_path / "doc.bbl"
+
+    aux_result = AuxResult(
+        bib_files=frozenset(["refs.bib"]),
+        bst_files=frozenset(),
+        aux_inputs=frozenset(),
+    )
+
+    run_calls: list[str] = []
+
+    def _fake(cmd: str, *, dest: Path, **__: object) -> RunResult:
+        run_calls.append(cmd)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"%PDF-1.4 fake")
+        if "bibtex" in cmd:
+            bbl.write_bytes(b"\\bibitem{ref1}")
+        return RunResult(exit_code=0, stdout="", stderr="", elapsed=0.1)
+
+    with (
+        patch("latexmk_py.rdb.run_command", side_effect=_fake),
+        patch("latexmk_py.rdb.parse_log", return_value=_NO_RERUN_LOG),
+        patch("latexmk_py.rdb.parse_fls", return_value=_EMPTY_FLS),
+        patch("latexmk_py.rdb.parse_aux", return_value=aux_result),
+    ):
+        result = RuleDatabase(tex, cfg).build()
+
+    assert result == 0
+    assert any("bibtex" in c for c in run_calls)
