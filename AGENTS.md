@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T04 — Parsers (fls, log, aux, bcf)
-**Task file:** [`ai/T04-parsers.md`](./ai/T04-parsers.md)
+**Current task:** T05 — Runner (placeholder expansion, subprocess)
+**Task file:** [`ai/T05-runner.md`](./ai/T05-runner.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.

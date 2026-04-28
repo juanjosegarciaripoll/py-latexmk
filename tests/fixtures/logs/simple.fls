@@ -1,0 +1,8 @@
+PWD /home/user/project
+INPUT /home/user/project/main.tex
+INPUT /home/user/project/chapter1.tex
+INPUT /usr/share/texmf/tex/latex/base/article.cls
+INPUT /usr/share/texmf/tex/latex/base/size10.clo
+OUTPUT /home/user/project/main.aux
+OUTPUT /home/user/project/main.pdf
+OUTPUT /home/user/project/main.log

@@ -220,3 +220,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 latexmk/
+
+# Test fixtures must be tracked even though *.log is excluded above
+!tests/fixtures/**

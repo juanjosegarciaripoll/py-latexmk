@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bcf:controlfile xmlns:bcf="http://biblatex-biber.sourceforge.net/biblatexml" version="3.7">
+  <bcf:datasources>
+    <bcf:datasource type="file" datatype="bibtex">refs.bib</bcf:datasource>
+    <bcf:datasource type="file" datatype="bibtex">extra.bib</bcf:datasource>
+    <bcf:datasource type="file" datatype="bibtex">https://example.com/remote.bib</bcf:datasource>
+  </bcf:datasources>
+</bcf:controlfile>

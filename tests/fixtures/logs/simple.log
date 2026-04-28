@@ -1,0 +1,21 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+**main
+(./main.tex
+LaTeX2e <2023-11-01> patch level 1
+ L3 programming layer <2024-01-22>
+(/usr/share/texmf/tex/latex/base/article.cls
+Document Class: article 2023/05/17 v1.4n Standard LaTeX document class
+(/usr/share/texmf/tex/latex/base/size10.clo))
+No file main.aux.
+[1{/usr/share/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+(./main.aux)
+LaTeX Warning: Label `sec:intro' multiply defined.
+LaTeX Warning: Reference `sec:missing' on page 1 undefined on input line 42.
+LaTeX Warning: Citation `Smith2020' on page 1 undefined on input line 55.
+Package natbib Warning: Citation `Jones2019' undefined on input line 60.
+No file main.bbl.
+LaTeX Warning: There were undefined references.
+Package biblatex Warning: Please rerun LaTeX.
+Rerun to get cross-references right.
+ )

@@ -1,5 +1,5 @@
 # T04: Parsers (fls, log, aux, bcf)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T01
 
 ## Goal
