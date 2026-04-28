@@ -168,7 +168,7 @@ Secondary: `pip install .` / `uv tool install`.
 | T02 | Config system (TOML loading, Config dataclass) | `done` |
 | T03 | CLI / argparse (all flags, dispatch) | `done` |
 | T04 | Parsers (fls, log, aux, bcf) | `done` |
-| T05 | Runner (placeholder expansion, subprocess) | `todo` |
+| T05 | Runner (placeholder expansion, subprocess) | `done` |
 | T06 | FDB read/write | `todo` |
 | T07 | Rule engine (Rule dataclass, out-of-date, topo-sort) | `todo` |
 | T08 | Primary build loop (pdflatex / lualatex / xelatex) | `todo` |

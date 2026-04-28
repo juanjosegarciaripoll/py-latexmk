@@ -1,5 +1,5 @@
 # T05: Runner (placeholder expansion + subprocess)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T01, T02
 
 ## Goal
