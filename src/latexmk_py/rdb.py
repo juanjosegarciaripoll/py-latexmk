@@ -173,19 +173,71 @@ class RuleDatabase:
         self.rules.append(rule)
         self._rule_map[name] = rule
 
-    def _add_secondary_rules(self, primary: Rule) -> None:
-        """Detect and register bibtex or biber rules after a primary run.
+    def _maybe_add_makeindex_rule(self, primary: Rule) -> None:
+        """Register a makeindex rule when the primary produced a .idx file.
 
-        Checks .bcf (biber) then .aux (bibtex).  Mirrors the bibliography
-        trigger logic in ``latexmk.pl`` (lines ~9540-9560).
+        Mirrors the makeindex trigger in ``latexmk.pl`` (lines ~9700-9730).
         """
-        if self.cfg.bibtex.use == 0.0:
+        idx = self._aux_path(primary).with_suffix(".idx")
+        if not idx.exists():
             return
-        bcf_path = self._bcf_path(primary)
-        if bcf_path.exists() and bcf_path.stat().st_size > 0:
-            self._ensure_biber_rule(primary, bcf_path)
-        elif (aux := parse_aux(self._aux_path(primary))).bib_files:
-            self._ensure_bibtex_rule(primary, aux)
+        name = f"makeindex_{primary.base.name}"
+        if name in self._rule_map:
+            return
+        rule = Rule(
+            name=name,
+            kind="secondary",
+            command=self.cfg.commands.makeindex,
+            source=idx,
+            dest=idx.with_suffix(".ind"),
+            base=primary.base,
+        )
+        self.rules.append(rule)
+        self._rule_map[name] = rule
+
+    def _has_gls_cusdep(self) -> bool:
+        """Return True if a custom dependency already covers glo→gls."""
+        return any(cd.from_ext == "glo" and cd.to_ext == "gls" for cd in self.cfg.custom_deps)
+
+    def _maybe_add_glossaries_rule(self, primary: Rule) -> None:
+        """Register a makeglossaries fallback when .glo exists and no cusdep covers it.
+
+        Mirrors the glossaries fallback in ``latexmk.pl`` (lines ~9730-9760).
+        """
+        glo = self._aux_path(primary).with_suffix(".glo")
+        if not glo.exists():
+            return
+        if self._has_gls_cusdep():
+            return  # cusdep (T11) will handle this
+        name = f"makeglossaries_{primary.base.name}"
+        if name in self._rule_map:
+            return
+        rule = Rule(
+            name=name,
+            kind="secondary",
+            command=self.cfg.commands.makeglossaries,
+            source=glo,
+            dest=glo.with_suffix(".gls"),
+            base=primary.base,
+        )
+        self.rules.append(rule)
+        self._rule_map[name] = rule
+
+    def _add_secondary_rules(self, primary: Rule) -> None:
+        """Detect and register all secondary rules after a primary run.
+
+        Bibliography (bibtex/biber), index, and glossaries are independent;
+        index/glossaries fire regardless of bibtex.use.
+        Mirrors secondary-rule triggers in ``latexmk.pl`` (lines ~9540-9760).
+        """
+        if self.cfg.bibtex.use != 0.0:
+            bcf_path = self._bcf_path(primary)
+            if bcf_path.exists() and bcf_path.stat().st_size > 0:
+                self._ensure_biber_rule(primary, bcf_path)
+            elif (aux := parse_aux(self._aux_path(primary))).bib_files:
+                self._ensure_bibtex_rule(primary, aux)
+        self._maybe_add_makeindex_rule(primary)
+        self._maybe_add_glossaries_rule(primary)
 
     def _mark_primary_stale(self, secondary: Rule) -> None:
         """Mark primary rules stale after a secondary rule produces output.

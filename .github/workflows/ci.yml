@@ -57,12 +57,14 @@ jobs:
         run: uv sync --all-extras --dev
 
       # Install a minimal TeX Live that covers all current and near-future tasks:
-      #   scheme-basic        — pdflatex + article.cls (T08)
-      #   collection-luatex   — lualatex (T08)
-      #   collection-xetex    — xelatex + xdvipdfmx (T08, T14)
-      #   biber               — biber binary (T09)
-      #   collection-bibtexextra — BibTeX extras (T09)
-      #   makeindex           — makeindex binary (T10)
+      #   scheme-basic              — pdflatex + article.cls (T08)
+      #   collection-luatex         — lualatex (T08)
+      #   collection-xetex          — xelatex + xdvipdfmx (T08, T14)
+      #   biber                     — biber binary (T09)
+      #   collection-bibtexextra    — BibTeX extras (T09)
+      #   makeindex                 — makeindex binary (T10)
+      #   glossaries                — makeglossaries script + LaTeX styles (T10)
+      #   collection-latexrecommended — glossaries deps + commonly needed pkgs
       - name: Install TeX Live
         uses: TeX-Live/setup-texlive-action@v4
         with:
@@ -73,6 +75,8 @@ jobs:
             biber
             collection-bibtexextra
             makeindex
+            glossaries
+            collection-latexrecommended
 
       - name: Run tests (unit + integration)
         run: >-

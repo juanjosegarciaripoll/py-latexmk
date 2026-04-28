@@ -1,5 +1,5 @@
 # T10: Makeindex & Glossaries
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T09
 
 ## Goal

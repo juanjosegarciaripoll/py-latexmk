@@ -173,7 +173,7 @@ Secondary: `pip install .` / `uv tool install`.
 | T07 | Rule engine (Rule dataclass, out-of-date, topo-sort) | `done` |
 | T08 | Primary build loop (pdflatex / lualatex / xelatex) | `done` |
 | T09 | Bibliography (bibtex + biber) | `done` |
-| T10 | Makeindex & glossaries | `todo` |
+| T10 | Makeindex & glossaries | `done` |
 | T11 | Custom dependencies (TOML cusdep) | `todo` |
 | T12 | Output & aux directories | `todo` |
 | T13 | Cleanup (-c, -C, -CF) | `todo` |

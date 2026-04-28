@@ -14,7 +14,14 @@ import pytest
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-from latexmk_py.config import BibtexConfig, BuildConfig, Config, DirectoriesConfig, OutputConfig
+from latexmk_py.config import (
+    BibtexConfig,
+    BuildConfig,
+    Config,
+    CustomDep,
+    DirectoriesConfig,
+    OutputConfig,
+)
 from latexmk_py.errors import FileMissingError
 from latexmk_py.parsers.bcf import BcfResult
 from latexmk_py.parsers.dotaux import AuxResult
@@ -532,3 +539,74 @@ def test_mock_build_with_bibtex_secondary(tmp_path: Path) -> None:
 
     assert result == 0
     assert any("bibtex" in c for c in run_calls)
+
+
+# ---------------------------------------------------------------------------
+# makeindex and makeglossaries detection — unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_makeindex_rule_added_when_idx_exists(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.idx").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(r.name == "makeindex_doc" for r in rdb.rules)
+
+
+def test_makeindex_rule_not_added_when_idx_absent(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name == "makeindex_doc" for r in rdb.rules)
+
+
+def test_makeindex_rule_not_added_twice(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.idx").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert sum(1 for r in rdb.rules if r.name == "makeindex_doc") == 1
+
+
+def test_glossaries_rule_added_when_glo_exists(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.glo").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(r.name == "makeglossaries_doc" for r in rdb.rules)
+
+
+def test_glossaries_rule_not_added_when_glo_absent(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name == "makeglossaries_doc" for r in rdb.rules)
+
+
+def test_glossaries_rule_not_added_when_cusdep_configured(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        custom_deps=(CustomDep(from_ext="glo", to_ext="gls", must=False, command="cmd"),),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    primary = rdb.rules[0]
+    (tmp_path / "doc.glo").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name == "makeglossaries_doc" for r in rdb.rules)
+
+
+def test_makeindex_and_bibtex_coexist(tmp_path: Path) -> None:
+    rdb = _rdb_with_primary(tmp_path)
+    primary = rdb.rules[0]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    (tmp_path / "doc.idx").write_bytes(b"")
+    rdb._add_secondary_rules(primary)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    names = [r.name for r in rdb.rules]
+    assert "bibtex_doc" in names
+    assert "makeindex_doc" in names
