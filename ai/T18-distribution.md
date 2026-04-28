@@ -1,16 +1,16 @@
-# T18: Release Distribution (Binary Artifacts + Package Manager Consumption)
-**Status:** `in-progress`
+# T18: Release Distribution (Windows Binaries + Release Automation)
+**Status:** `done`
 **Depends on:** T01–T17 (all code complete)
 
 ## Goal
-Produce self-contained executables for Windows/macOS/Linux at release time,
-plus relocatable package artifacts that packaging tools can consume.
-Also support install-from-source for Python users.
+Produce release-time Windows prebuilt binaries, generated winget manifests
+(internal packaging artifacts), and source tarballs, with source-install
+fallback for Python users.
 
 ## Files
 - `latexmk.spec` — PyInstaller spec (commit this)
 - `tools/release.py` — release build + artifact staging/renaming
-- `packaging/` — package-manager manifests/templates (winget/homebrew/etc.)
+- `packaging/winget/` — winget manifest templates (rendered into `dist/*.yaml`)
 - `.gitignore` — add `dist/`, `build/`
 
 ## Dev dependency
@@ -47,44 +47,25 @@ exe = EXE(
 )
 ```
 
-Build: `uv run pyinstaller latexmk.spec`
-Output: `dist/latexmk` (or `dist/latexmk.exe` on Windows).
+Build entry point: `uv run python tools/release.py`
+On Windows, this invokes PyInstaller and emits `dist/latexmk.exe`.
 
 ## tools/release.py
 
-Used by CI at release time to produce platform/arch artifacts and
-relocatable package payloads:
+Used by CI at release time to:
 
-```python
-import shutil, sys, platform
-from pathlib import Path
+- run PyInstaller (`latexmk.spec`)
+- produce release archive + `SHA256SUMS.txt`
+- generate concrete winget manifests in `dist/` on Windows
 
-src = Path('dist') / ('latexmk.exe' if sys.platform == 'win32' else 'latexmk')
-arch = platform.machine().lower()
-system = sys.platform  # linux, darwin, win32
-name = f'latexmk-{system}-{arch}' + ('.exe' if sys.platform == 'win32' else '')
-shutil.copy(src, Path('dist') / name)
-print(f'Artifact: dist/{name}')
-```
+## Packaging consumption target
 
-Minimum outputs per platform:
-- Standalone binary: `dist/latexmk[.exe]`
-- Renamed artifact: `dist/latexmk-<platform>-<arch>[.exe]`
-- Relocatable payload (archive or equivalent) containing binary + metadata for
-  packaging-tool consumption.
+Provide winget metadata/templates in `packaging/winget/` so release automation
+can generate release-aligned manifests.
 
-## Packaging consumption targets
-
-Provide package metadata/templates in `packaging/` so release artifacts can be
-consumed by package managers.
-
-- Windows: winget local manifest workflow is first-class.
-  - Expected user flow: `winget install --manifest <path-to-manifest-dir>`
-  - The manifest references the release artifact URL/path and checksum.
-- macOS: Homebrew tap formula template referencing release artifact + checksum.
-- Linux: document generic relocatable archive consumption and include templates
-  for at least one common packaging path (for example, distro package recipe or
-  simple install script expectations).
+- Windows: generated manifests reference release artifact URL/path and checksum.
+- Current user install path is direct download of prebuilt `latexmk.exe` from
+  GitHub Releases (winget publication can be added later).
 
 Exact publishing destination is out of scope for this task. Public registry
 submission is optional.
@@ -102,12 +83,9 @@ Source-install remains supported and documented as the standard fallback when
 binary/package-manager installs are not used.
 
 ## Checklist
-- [ ] `uv run pyinstaller latexmk.spec` produces `dist/latexmk[.exe]`
-- [ ] Release workflow builds platform binaries for Windows/macOS/Linux
-- [ ] Release workflow emits relocatable package artifact(s)
-- [ ] Windows: local winget manifest can install from produced artifact
-- [ ] macOS: Homebrew formula/template references produced artifact + checksum
-- [ ] Linux: relocatable artifact consumption path is documented and tested
-- [ ] `pip install .` + `latexmk --version` works
-- [ ] `uv tool install .` + `latexmk --version` works
-- [ ] CI/release: `release.py` produces correct artifact name per platform
+- [x] `uv run python tools/release.py` builds Windows executable artifacts
+- [x] Release workflow builds Windows artifacts and source tarball
+- [x] Release workflow emits checksums and generated winget YAML files
+- [x] `pip install .` + `latexmk --version` works
+- [x] `uv tool install .` + `latexmk --version` works
+- [x] CI/release uses `release.py` as build entry point

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import platform
-import shutil
+import subprocess
 import sys
 import tarfile
+import tomllib
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,9 +34,10 @@ class ReleaseArtifacts:
     """Paths for generated release artifacts."""
 
     binary: Path
-    renamed_binary: Path
+    release_binary: Path
     relocatable_archive: Path
     checksums_file: Path
+    winget_manifest_files: tuple[Path, ...]
 
 
 def normalize_arch(machine: str) -> str:
@@ -69,7 +72,7 @@ def create_relocatable_archive(binary: Path, output_dir: Path, artifact_stem: st
             archive.write(binary, arcname=binary.name)
         return archive_path
 
-    archive_path = output_dir / f"{artifact_stem}.tar.gz"
+    archive_path = output_dir / f"{artifact_stem}.tar.gz"  # type: ignore[unreachable]
     with tarfile.open(archive_path, mode="w:gz") as archive:
         archive.add(binary, arcname=binary.name)
     return archive_path
@@ -81,7 +84,74 @@ def write_checksums(paths: list[Path], output_path: Path) -> None:
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def build_release_artifacts(dist_dir: Path) -> ReleaseArtifacts:
+def winget_architecture(arch: str) -> str:
+    """Map normalized architecture to winget architecture enum."""
+    if arch == "x86_64":
+        return "x64"
+    if arch == "arm64":
+        return "arm64"
+    return arch
+
+
+def render_winget_manifest(
+    *,
+    templates_dir: Path,
+    output_dir: Path,
+    package_identifier: str,
+    package_version: str,
+    installer_url: str,
+    installer_sha256: str,
+    architecture: str,
+) -> None:
+    """Render winget manifests from templates with release values."""
+    replacements = {
+        "__IDENTIFIER__": package_identifier,
+        "__VERSION__": package_version,
+        "__URL__": installer_url,
+        "__SHA256__": installer_sha256,
+        "__ARCH__": architecture,
+    }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for template in templates_dir.glob("*.yaml.in"):
+        text = template.read_text(encoding="utf-8")
+        for key, value in replacements.items():
+            text = text.replace(key, value)
+        target_name = template.name.removesuffix(".in")
+        (output_dir / target_name).write_text(text, encoding="utf-8")
+
+
+def release_version_from_pyproject(pyproject_path: Path) -> str:
+    """Read package version from pyproject.toml."""
+    data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    project = data.get("project")
+    if not isinstance(project, dict):
+        msg = "Missing [project] section in pyproject.toml"
+        raise TypeError(msg)
+    version = project.get("version")
+    if not isinstance(version, str) or not version:
+        msg = "Missing or invalid project.version in pyproject.toml"
+        raise ValueError(msg)
+    return version
+
+
+def winget_installer_url_from_env(binary_name: str, version: str) -> str:
+    """Build installer URL from environment for release automation."""
+    override = os.environ.get("WINGET_INSTALLER_URL")
+    if override:
+        return override
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not repo:
+        msg = (
+            "Missing installer URL context. Set WINGET_INSTALLER_URL or "
+            "GITHUB_REPOSITORY in the environment."
+        )
+        raise ValueError(msg)
+    return f"https://github.com/{repo}/releases/download/v{version}/{binary_name}"
+
+
+def build_release_artifacts(
+    dist_dir: Path,
+) -> ReleaseArtifacts:
     """Produce renamed binary, relocatable archive, and checksum manifest."""
     binary_name = binary_name_for_platform(sys.platform)
     source_binary = dist_dir / binary_name
@@ -94,23 +164,45 @@ def build_release_artifacts(dist_dir: Path) -> ReleaseArtifacts:
 
     arch = normalize_arch(platform.machine())
     os_label = system_label(sys.platform)
-    suffix = ".exe" if sys.platform == "win32" else ""
     artifact_stem = f"latexmk-{os_label}-{arch}"
-
-    renamed_binary = dist_dir / f"{artifact_stem}{suffix}"
-    shutil.copy2(source_binary, renamed_binary)
-
-    archive = create_relocatable_archive(renamed_binary, dist_dir, artifact_stem)
+    release_binary = source_binary
+    archive = create_relocatable_archive(release_binary, dist_dir, artifact_stem)
 
     checksums_file = dist_dir / "SHA256SUMS.txt"
-    write_checksums([renamed_binary, archive], checksums_file)
+    write_checksums([release_binary, archive], checksums_file)
+
+    winget_manifest_files: tuple[Path, ...] = ()
+    if sys.platform == "win32":
+        release_version = release_version_from_pyproject(Path("pyproject.toml"))
+        installer_url = winget_installer_url_from_env(release_binary.name, release_version)
+        templates_dir = Path("packaging") / "winget"
+        render_winget_manifest(
+            templates_dir=templates_dir,
+            output_dir=dist_dir,
+            package_identifier="Latexmk.PyLatexmk",
+            package_version=release_version,
+            installer_url=installer_url,
+            installer_sha256=sha256_hex(release_binary),
+            architecture=winget_architecture(arch),
+        )
+        winget_manifest_files = tuple(sorted(dist_dir.glob("latexmk.*.yaml")))
 
     return ReleaseArtifacts(
         binary=source_binary,
-        renamed_binary=renamed_binary,
+        release_binary=release_binary,
         relocatable_archive=archive,
         checksums_file=checksums_file,
+        winget_manifest_files=winget_manifest_files,
     )
+
+
+def run_pyinstaller() -> None:
+    """Build standalone executable with PyInstaller."""
+    command = ["pyinstaller", "latexmk.spec"]
+    result = subprocess.run(command, check=False)  # noqa: S603 - fixed trusted command
+    if result.returncode != 0:
+        msg = f"PyInstaller failed with exit code {result.returncode}"
+        raise RuntimeError(msg)
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,11 +222,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     """Run artifact generation and print generated paths."""
     args = parse_args()
+    run_pyinstaller()
     artifacts = build_release_artifacts(args.dist_dir)
     print(f"Binary: {artifacts.binary}")
-    print(f"Artifact: {artifacts.renamed_binary}")
+    print(f"Artifact: {artifacts.release_binary}")
     print(f"Relocatable: {artifacts.relocatable_archive}")
     print(f"Checksums: {artifacts.checksums_file}")
+    for path in artifacts.winget_manifest_files:
+        print(f"Winget manifest: {path}")
     return 0
 
 

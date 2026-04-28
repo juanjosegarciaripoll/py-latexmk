@@ -98,12 +98,23 @@ def _norm_path(p: str) -> str:
     return Path(p.replace("\\", "/")).name
 
 
+def _section_mode(raw: str) -> str | None:
+    if raw.startswith(("(generated)", "  (generated)")):
+        return "generated"
+    if raw.startswith(("(rewritten before read)", "  (rewritten before read)")):
+        return "rewritten"
+    if raw.startswith(("(source)", "  (source)")):
+        return "source"
+    return None
+
+
 def _normalize_fdb(
     path: Path,
 ) -> dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]]:
     """Normalize .fdb_latexmk into stable comparable components by rule."""
     lines = path.read_text(encoding="utf-8").splitlines()
-    assert lines and lines[0].startswith("# Fdb version ")
+    assert lines
+    assert lines[0].startswith("# Fdb version ")
     current_rule = ""
     sources_by_rule: dict[str, set[str]] = {}
     generated_by_rule: dict[str, set[str]] = {}
@@ -111,14 +122,8 @@ def _normalize_fdb(
     mode = "source"
 
     for raw in lines[1:]:
-        if raw.startswith("(generated)") or raw.startswith("  (generated)"):
-            mode = "generated"
-            continue
-        if raw.startswith("(rewritten before read)") or raw.startswith("  (rewritten before read)"):
-            mode = "rewritten"
-            continue
-        if raw.startswith("(source)") or raw.startswith("  (source)"):
-            mode = "source"
+        if section_mode := _section_mode(raw):
+            mode = section_mode
             continue
         if match := _RULE_RE.match(raw):
             current_rule = match.group(1)
@@ -144,9 +149,9 @@ def _normalize_fdb(
                     rewritten_by_rule[current_rule].add(entry)
 
     normalized: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {}
-    for rule in sources_by_rule:
+    for rule, sources in sources_by_rule.items():
         normalized[rule] = (
-            tuple(sorted(sources_by_rule[rule])),
+            tuple(sorted(sources)),
             tuple(sorted(generated_by_rule[rule])),
             tuple(sorted(rewritten_by_rule[rule])),
         )

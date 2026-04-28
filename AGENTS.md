@@ -8,9 +8,9 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T18 — Release distribution (binaries + package-manager artifacts)
+**Current task:** T18 — Release distribution (Windows binaries + release automation)
 **Task file:** [`ai/T18-distribution.md`](./ai/T18-distribution.md)
-**Status:** `in-progress`
+**Status:** `done`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.
 

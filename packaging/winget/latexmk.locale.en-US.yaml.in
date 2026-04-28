@@ -5,6 +5,6 @@ PackageLocale: en-US
 Publisher: latexmk-py
 PackageName: latexmk
 ShortDescription: Python port of latexmk packaged as a standalone executable.
-License: MIT
+License: GPL-2.0-only
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0

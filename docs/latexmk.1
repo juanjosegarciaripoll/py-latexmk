@@ -1,0 +1,123 @@
+.TH LATEXMK 1 "April 2026" "py-latexmk" "User Commands"
+.SH NAME
+latexmk \- automated LaTeX build tool (Python port)
+.SH SYNOPSIS
+.B latexmk
+[\fIoptions\fR] [\fIfile ...\fR]
+.SH DESCRIPTION
+\fBlatexmk\fR builds LaTeX documents by running the required tools
+(latex/pdflatex/lualatex/xelatex, bibtex/biber, makeindex, and related
+post-processing) until outputs converge.
+
+This manual describes the Python reimplementation (\fBpy-latexmk\fR).
+It is adapted from the upstream Perl \fBlatexmk\fR manual and aligned to
+the behavior implemented in this repository.
+.SH COMPATIBILITY
+The project aims to preserve user-visible behavior of Perl \fBlatexmk\fR,
+with explicit non-goals and divergences documented in project files.
+
+Primary invariants:
+.IP \(bu 2
+CLI compatibility for common editor workflows.
+.IP \(bu 2
+Stable exit codes and diagnostics prefix (\fBlatexmk:\fR).
+.IP \(bu 2
+\fB.fdb_latexmk\fR format compatibility.
+.SH OPTIONS
+The following high-value options are supported (not exhaustive):
+.SS Output format
+\fB-pdf\fR, \fB-pdfdvi\fR, \fB-pdflua\fR, \fB-pdfxe\fR, \fB-pdf-\fR,
+\fB-dvi\fR/\fB-dvi-\fR, \fB-dvilua\fR, \fB-ps\fR/\fB-ps-\fR,
+\fB-output-format=\fIF\fR.
+.SS Engine commands
+\fB-latex[=\fICMD\fR]\fR, \fB-pdflatex[=\fICMD\fR]\fR,
+\fB-lualatex[=\fICMD\fR]\fR, \fB-xelatex[=\fICMD\fR]\fR,
+\fB-bibtex[=\fICMD\fR]\fR, \fB-biber[=\fICMD\fR]\fR,
+\fB-stdtexcmds\fR.
+.SS Directories
+\fB-auxdir=\fID\fR, \fB-aux-directory=\fID\fR,
+\fB-outdir=\fID\fR, \fB-output-directory=\fID\fR,
+\fB-out2dir=\fID\fR, \fB-cd\fR/\fB-cd-\fR,
+\fB-emulate-aux-dir\fR/\fB-emulate-aux-dir-\fR.
+.SS Bibliography and indexing
+\fB-bibtex\fR, \fB-bibtex-\fR, \fB-nobibtex\fR,
+\fB-bibtex-cond\fR, \fB-bibtex-cond1\fR,
+\fB-biber\fR, \fB-makeindex\fR handling, glossary fallback behavior.
+.SS Build control
+\fB-f\fR/\fB-f-\fR, \fB-g\fR/\fB-g-\fR, \fB-gg\fR, \fB-gt\fR,
+\fB-recorder\fR/\fB-recorder-\fR, \fB-interaction=\fIMODE\fR.
+.SS Preview
+\fB-pv\fR, \fB-pvc\fR/\fB-pvc-\fR, \fB-view=\fIWHAT\fR,
+\fB-pvctimeoutmins=\fIN\fR, \fB-new-viewer\fR/\fB-new-viewer-\fR.
+.SS Cleanup
+\fB-c\fR, \fB-C\fR, \fB-CA\fR, \fB-CF\fR.
+.SS Dependency output
+\fB-M\fR, \fB-MF\fR \fIFILE\fR, \fB-MP\fR,
+\fB-deps\fR/\fB-deps-\fR, \fB-deps-out=\fIFILE\fR,
+\fB-deps-escape=\fIKIND\fR.
+.SS Config and diagnostics
+\fB-norc\fR, \fB-r\fR \fIFILE\fR, \fB-help\fR, \fB-version\fR,
+\fB-commands\fR, \fB-dir-report\fR, \fB-dir-report-only\fR,
+\fB-diagnostics\fR, \fB-quiet\fR/\fB-silent\fR.
+.SH CONFIGURATION
+Configuration uses TOML (not Perl code execution).
+Merge order is:
+.IP "1." 3
+System config
+.IP "2." 3
+User config
+.IP "3." 3
+Project config
+.IP "4." 3
+Additional CLI config files (\fB-r\fR)
+
+\fB-norc\fR disables steps 1 through 3.
+CLI flags override loaded config values.
+.SH EXIT STATUS
+.TP
+\fB0\fR
+Success.
+.TP
+\fB10\fR
+Bad options.
+.TP
+\fB11\fR
+Missing file.
+.TP
+\fB12\fR
+Build failure.
+.TP
+\fB13\fR
+Configuration error.
+.TP
+\fB20\fR
+Internal error.
+.SH FILES
+.TP
+\fBlatexmk.toml\fR, \fB.latexmk.toml\fR
+Project configuration files.
+.TP
+\fB.fdb_latexmk\fR
+Build state database.
+.TP
+\fB*.fls\fR, \fB*.log\fR, \fB*.aux\fR, \fB*.bcf\fR
+Inputs for dependency and rerun detection.
+.SH DIFFERENCES FROM PERL LATEXMK
+Key intentional differences include:
+.IP \(bu 2
+No programmable \fB.latexmkrc\fR Perl evaluation.
+.IP \(bu 2
+No \fB-e CODE\fR execution mode.
+.IP \(bu 2
+No embedded Perl fallback.
+
+See project change logs for detailed divergence notes.
+.SH COPYRIGHT
+This manual page is an adaptation based on the upstream Perl
+\fBlatexmk\fR manual by John Collins and contributors.
+
+Upstream \fBlatexmk\fR is distributed under GNU GPL v2.
+This repository uses GNU GPL v2 licensing.
+.SH SEE ALSO
+latex(1), pdflatex(1), lualatex(1), xelatex(1), bibtex(1), biber(1),
+makeindex(1)

@@ -3,7 +3,7 @@ PackageIdentifier: __IDENTIFIER__
 PackageVersion: __VERSION__
 InstallerType: portable
 Installers:
-  - Architecture: x64
+  - Architecture: __ARCH__
     InstallerUrl: __URL__
     InstallerSha256: __SHA256__
     Commands:

@@ -1,30 +1,12 @@
 # Packaging Artifacts
 
-Release artifacts produced by `tools/release.py` are intended to be consumed by
-package managers.
+Release artifacts produced by the GitHub release workflow are intended to be
+consumed by packaging workflows.
 
-## Windows (winget local manifest)
+## Windows winget manifests (internal for now)
 
-1. Build artifacts for Windows:
-   - `uv run pyinstaller latexmk.spec`
-   - `python tools/release.py`
-2. Copy templates from `packaging/winget/`.
-3. Replace placeholders:
-   - `__IDENTIFIER__` (for example `Latexmk.Latexmk`)
-   - `__VERSION__`
-   - `__URL__` (artifact URL or file path)
-   - `__SHA256__` (from `dist/SHA256SUMS.txt`)
-4. Install locally:
-   - `winget install --manifest .\packaging\winget\`
+Generated winget manifest files are emitted to `dist/` by `tools/release.py`
+during release builds.
 
-## macOS (Homebrew)
-
-1. Build artifacts on macOS host.
-2. Use `packaging/homebrew/latexmk.rb.in` as formula template.
-3. Fill `__VERSION__`, `__URL__`, and `__SHA256__`.
-
-## Linux
-
-1. Build artifacts on Linux host.
-2. Use `dist/latexmk-linux-<arch>.tar.gz` as relocatable payload.
-3. Consume directly or as input to distro-specific packaging scripts.
+At the current stage, these files are release-engineering artifacts and are not
+the primary end-user install path.

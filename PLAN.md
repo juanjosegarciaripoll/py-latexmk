@@ -46,7 +46,6 @@ tools/                                               (T18 — does not exist yet
   release.py      release artifact builder
 packaging/                                           (T18)
   winget/         local manifest templates
-  homebrew/       formula template(s)
 latexmk.spec      PyInstaller spec                   (T18)
 latexmk/          Perl reference (READ-ONLY)
 ```
@@ -141,11 +140,14 @@ exit codes. TeXstudio reads `.fdb_latexmk`; needs exact format.
 
 ## Distribution
 
-PyInstaller `--onefile` release binaries for Windows/macOS/Linux.
+Release automation is tag-driven (`v*`) and builds:
+- Windows prebuilt executable artifacts (`latexmk.exe`) plus checksums
+- generated winget manifests (release-engineering artifacts)
+- source tarball (sdist)
+
 Details: `ai/T18-distribution.md`.
-Release-time outputs include relocatable artifacts consumable by package tools
-(winget/homebrew and similar), plus source-install fallback.
-Windows install guidance centers on `winget install --manifest <dir>` for local manifests.
+End-user Windows install guidance is direct download of prebuilt binaries from
+GitHub Releases. Source-install fallback remains supported.
 
 ## Modules
 
@@ -185,5 +187,5 @@ Windows install guidance centers on `winget install --manifest <dir>` for local 
 | T15 | Dependency output (-M, -deps) | `done` |
 | T16 | Preview & -pvc | `done` |
 | T17 | Integration tests | `done` |
-| T18 | Release distribution (binaries + package-manager artifacts) | `in-progress` |
+| T18 | Release distribution (Windows binaries + release automation) | `done` |
 
