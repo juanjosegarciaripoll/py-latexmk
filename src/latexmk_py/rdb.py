@@ -153,15 +153,25 @@ class RuleDatabase:
     def _rule_cwd(self, rule: Rule) -> Path | None:
         """Return the working directory for running *rule*.
 
-        Secondary rules (bibtex/biber) use the .tex directory when fudge is
-        enabled so that bibtex can locate .bib files without BIBINPUTS tricks.
-        Mirrors the fudge logic in ``latexmk.pl`` (``$bibtex_fudge``).
+        Secondary rules run from the .tex directory so tools like bibtex and
+        makeindex can write outputs using relative paths under TeX's
+        ``openout_any = p`` restrictions.
         """
         if self.cfg.build.cd:
             return self.tex.parent
-        if rule.kind == "secondary" and self.cfg.bibtex.fudge:
+        if rule.kind == "secondary":
             return self.tex.parent
         return None
+
+    @staticmethod
+    def _rel_if_under(path: Path, cwd: Path | None) -> Path:
+        """Return path relative to cwd when possible; else unchanged absolute path."""
+        if cwd is None:
+            return path
+        try:
+            return path.relative_to(cwd)
+        except ValueError:
+            return path
 
     # ------------------------------------------------------------------
     # Private helpers — .bib resolution
@@ -394,17 +404,23 @@ class RuleDatabase:
         if not self.cfg.output.silent:
             print(f"Latexmk: applying rule '{rule.name}'...")  # noqa: T201
 
+        cwd = self._rule_cwd(rule)
+        source = self._rel_if_under(rule.source, cwd)
+        dest = self._rel_if_under(rule.dest, cwd)
+        root = self._rel_if_under(self.tex, cwd)
+        main_tex = self._rel_if_under(self.tex, cwd)
+
         result = run_command(
             rule.command,
-            source=rule.source,
-            dest=rule.dest,
+            source=source,
+            dest=dest,
             base=rule.base,
-            root=self.tex,
-            main_tex=self.tex,
+            root=root,
+            main_tex=main_tex,
             extra_opts=self._build_extra_opts(rule),
             aux_dir=self.cfg.directories.aux_dir,
             out_dir=self.cfg.directories.out_dir,
-            cwd=self._rule_cwd(rule),
+            cwd=cwd,
         )
 
         if result.stdout:
