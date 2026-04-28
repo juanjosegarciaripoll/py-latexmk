@@ -1,15 +1,16 @@
-# T18: Standalone Distribution (PyInstaller)
-**Status:** `todo`
+# T18: Release Distribution (Binary Artifacts + Package Manager Consumption)
+**Status:** `in-progress`
 **Depends on:** T01–T17 (all code complete)
 
 ## Goal
-Package the tool as a self-contained binary with PyInstaller and provide an
-install helper script. No Python installation needed on target machines.
+Produce self-contained executables for Windows/macOS/Linux at release time,
+plus relocatable package artifacts that packaging tools can consume.
+Also support install-from-source for Python users.
 
 ## Files
 - `latexmk.spec` — PyInstaller spec (commit this)
-- `tools/install.py` — cross-platform install helper
-- `tools/release.py` — build + rename artifacts for CI
+- `tools/release.py` — release build + artifact staging/renaming
+- `packaging/` — package-manager manifests/templates (winget/homebrew/etc.)
 - `.gitignore` — add `dist/`, `build/`
 
 ## Dev dependency
@@ -49,33 +50,10 @@ exe = EXE(
 Build: `uv run pyinstaller latexmk.spec`
 Output: `dist/latexmk` (or `dist/latexmk.exe` on Windows).
 
-## tools/install.py
-
-```
-usage: python tools/install.py [--prefix DIR] [--system] [--uninstall] [--no-path]
-```
-
-Default install paths:
-- Linux/macOS user: `~/.local/bin/latexmk`
-- Windows user: `%LOCALAPPDATA%\Programs\latexmk\latexmk.exe`
-- System (--system): `/usr/local/bin/latexmk` | `%ProgramFiles%\latexmk\latexmk.exe`
-
-Steps:
-1. Locate binary: `dist/latexmk[.exe]` (or accept `--binary PATH`).
-2. Create prefix dir.
-3. Copy binary.
-4. Set executable bit on POSIX (`chmod +x`).
-5. Unless `--no-path`: check if prefix is on `PATH`; warn if not.
-   On Windows (user install): offer to add to `HKCU\Environment\Path`
-   via `winreg` (no elevation needed).
-6. Verify: run `latexmk --version` from installed path.
-7. Print success message with install location.
-
-`--uninstall`: remove binary (and PATH entry on Windows).
-
 ## tools/release.py
 
-Used by CI to produce platform-named artifacts:
+Used by CI at release time to produce platform/arch artifacts and
+relocatable package payloads:
 
 ```python
 import shutil, sys, platform
@@ -89,6 +67,28 @@ shutil.copy(src, Path('dist') / name)
 print(f'Artifact: dist/{name}')
 ```
 
+Minimum outputs per platform:
+- Standalone binary: `dist/latexmk[.exe]`
+- Renamed artifact: `dist/latexmk-<platform>-<arch>[.exe]`
+- Relocatable payload (archive or equivalent) containing binary + metadata for
+  packaging-tool consumption.
+
+## Packaging consumption targets
+
+Provide package metadata/templates in `packaging/` so release artifacts can be
+consumed by package managers.
+
+- Windows: winget local manifest workflow is first-class.
+  - Expected user flow: `winget install --manifest <path-to-manifest-dir>`
+  - The manifest references the release artifact URL/path and checksum.
+- macOS: Homebrew tap formula template referencing release artifact + checksum.
+- Linux: document generic relocatable archive consumption and include templates
+  for at least one common packaging path (for example, distro package recipe or
+  simple install script expectations).
+
+Exact publishing destination is out of scope for this task. Public registry
+submission is optional.
+
 ## pip / uv install path (secondary)
 
 `pyproject.toml` already has `[project.scripts] latexmk = "latexmk_py:main"`.
@@ -98,12 +98,16 @@ pip install .           # installs latexmk console script
 uv tool install .       # installs as isolated tool
 ```
 
+Source-install remains supported and documented as the standard fallback when
+binary/package-manager installs are not used.
+
 ## Checklist
 - [ ] `uv run pyinstaller latexmk.spec` produces `dist/latexmk[.exe]`
-- [ ] `dist/latexmk --version` works without Python installed
-- [ ] `python tools/install.py` copies binary to correct default path
-- [ ] `python tools/install.py --uninstall` removes it
-- [ ] `python tools/install.py --prefix /tmp/test` installs to custom path
-- [ ] Windows: PATH registry write works without elevation
+- [ ] Release workflow builds platform binaries for Windows/macOS/Linux
+- [ ] Release workflow emits relocatable package artifact(s)
+- [ ] Windows: local winget manifest can install from produced artifact
+- [ ] macOS: Homebrew formula/template references produced artifact + checksum
+- [ ] Linux: relocatable artifact consumption path is documented and tested
 - [ ] `pip install .` + `latexmk --version` works
-- [ ] CI: `release.py` produces correct artifact name per platform
+- [ ] `uv tool install .` + `latexmk --version` works
+- [ ] CI/release: `release.py` produces correct artifact name per platform

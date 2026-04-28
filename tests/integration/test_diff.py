@@ -63,6 +63,7 @@ def _run_perl(workdir: Path, tex_name: str) -> subprocess.CompletedProcess[str]:
         check=False,
     )
 
+
 def _run_py_args(workdir: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
         [sys.executable, "-m", "latexmk_py", *args],
@@ -97,7 +98,9 @@ def _norm_path(p: str) -> str:
     return Path(p.replace("\\", "/")).name
 
 
-def _normalize_fdb(path: Path) -> dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]]:
+def _normalize_fdb(
+    path: Path,
+) -> dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]]:
     """Normalize .fdb_latexmk into stable comparable components by rule."""
     lines = path.read_text(encoding="utf-8").splitlines()
     assert lines and lines[0].startswith("# Fdb version ")
@@ -152,7 +155,9 @@ def _normalize_fdb(path: Path) -> dict[str, tuple[tuple[str, ...], tuple[str, ..
 
 def _normalize_depfile(path: Path) -> tuple[str, tuple[str, ...]]:
     """Normalize a Make-format depfile to (target, sorted deps)."""
-    lines = [line.rstrip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    lines = [
+        line.rstrip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
     text = " ".join(lines)
     lhs, rhs = text.split(":", 1)
     target = _norm_path(lhs.strip().rstrip("\\"))

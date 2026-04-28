@@ -43,8 +43,10 @@ tests/
   test_*.py
   integration/    test_*.py  known_divergences.py    (T17)
 tools/                                               (T18 — does not exist yet)
-  install.py      install binary
-  release.py      PyInstaller build
+  release.py      release artifact builder
+packaging/                                           (T18)
+  winget/         local manifest templates
+  homebrew/       formula template(s)
 latexmk.spec      PyInstaller spec                   (T18)
 latexmk/          Perl reference (READ-ONLY)
 ```
@@ -139,9 +141,11 @@ exit codes. TeXstudio reads `.fdb_latexmk`; needs exact format.
 
 ## Distribution
 
-PyInstaller `--onefile`. Details: `ai/T18-distribution.md`.
-Install: `~/.local/bin/latexmk` (Linux/macOS), `%LOCALAPPDATA%\Programs\latexmk\latexmk.exe` (Windows).
-Secondary: `pip install .` / `uv tool install`.
+PyInstaller `--onefile` release binaries for Windows/macOS/Linux.
+Details: `ai/T18-distribution.md`.
+Release-time outputs include relocatable artifacts consumable by package tools
+(winget/homebrew and similar), plus source-install fallback.
+Windows install guidance centers on `winget install --manifest <dir>` for local manifests.
 
 ## Modules
 
@@ -181,5 +185,5 @@ Secondary: `pip install .` / `uv tool install`.
 | T15 | Dependency output (-M, -deps) | `done` |
 | T16 | Preview & -pvc | `done` |
 | T17 | Integration tests | `done` |
-| T18 | Distribution (PyInstaller, install.py) | `todo` |
+| T18 | Release distribution (binaries + package-manager artifacts) | `in-progress` |
 

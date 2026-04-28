@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: __IDENTIFIER__
+PackageVersion: __VERSION__
+PackageLocale: en-US
+Publisher: latexmk-py
+PackageName: latexmk
+ShortDescription: Python port of latexmk packaged as a standalone executable.
+License: MIT
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
