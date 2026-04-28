@@ -1,5 +1,5 @@
 # T16: Preview & Continuous Mode (-pv, -pvc)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08, T12
 
 ## Goal

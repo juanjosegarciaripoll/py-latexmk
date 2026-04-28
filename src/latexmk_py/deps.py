@@ -6,11 +6,14 @@ Mirrors dependency-output behavior in ``latexmk.pl`` (deps generation path).
 from __future__ import annotations
 
 import sys
-from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from latexmk_py.config import DepsConfig
-from latexmk_py.rules import Rule
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from latexmk_py.config import DepsConfig
+    from latexmk_py.rules import Rule
 
 type EscapeMode = str
 

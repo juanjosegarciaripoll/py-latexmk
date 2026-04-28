@@ -10,7 +10,9 @@ import re
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Literal
 
+from latexmk_py.cleaner import clean
 from latexmk_py.config import CommandsConfig, Config, load_config
 from latexmk_py.errors import (
     BadOptionsError,
@@ -19,10 +21,12 @@ from latexmk_py.errors import (
     FileMissingError,
     LatexmkError,
 )
+from latexmk_py.rdb import RuleDatabase
 
 VERSION = "0.1.0"
 
 _GO_CLEAN_REBUILD = 2  # go_mode value for -gg: clean then rebuild
+_CLEAN_MODE_FULL = 2
 
 # Matches -flagname=value where flagname is letters/digits/hyphens.
 # Guards against splitting filenames that happen to contain '='.
@@ -517,22 +521,30 @@ def _resolve_tex_files(pos_args: list[str], cfg: Config) -> list[Path]:
 # ── stub dispatch ─────────────────────────────────────────────────────────────
 
 
-def _stub_build(tex_files: list[Path], cfg: Config) -> None:
-    _ = cfg
+def _run_build(tex_files: list[Path], cfg: Config) -> None:
     for f in tex_files:
-        _out(f"latexmk: (build not yet implemented) would build {f}")
+        rc = RuleDatabase(f, cfg).build()
+        if rc != 0:
+            raise BuildError(f"latexmk: build failed for {f}")
 
 
-def _stub_watch(tex_files: list[Path], cfg: Config) -> None:
-    _ = cfg
+def _run_watch(tex_files: list[Path], cfg: Config) -> None:
     for f in tex_files:
-        _out(f"latexmk: (continuous preview not yet implemented) would watch {f}")
+        rc = RuleDatabase(f, cfg).watch()
+        if rc != 0:
+            raise BuildError(f"latexmk: watch failed for {f}")
 
 
-def _stub_clean(tex_files: list[Path], cfg: Config) -> None:
-    _ = cfg
+def _clean_mode_value(cleanup_mode: int) -> Literal[1, 2]:
+    return 2 if cleanup_mode >= _CLEAN_MODE_FULL else 1
+
+
+def _run_clean(tex_files: list[Path], cfg: Config, *, cleanup_mode: int, cleanup_fdb: bool) -> None:
+    mode = _clean_mode_value(cleanup_mode)
     for f in tex_files:
-        _out(f"latexmk: (cleanup not yet implemented) would clean {f}")
+        clean(f, cfg, mode=mode, fdb_only=cleanup_fdb and cleanup_mode == 0)
+        if cleanup_fdb and cleanup_mode > 0:
+            clean(f, cfg, mode=mode, fdb_only=True)
 
 
 # ── core logic ────────────────────────────────────────────────────────────────
@@ -568,19 +580,21 @@ def _run(argv: list[str]) -> None:
 
     tex_files = _resolve_tex_files(tex_args, cfg)
 
-    # Pure cleanup: -c or -C/-CA without -gg
-    if flags.cleanup_mode > 0 and flags.go_mode != _GO_CLEAN_REBUILD:
-        _stub_clean(tex_files, cfg)
+    cfg = replace(cfg, preview_mode=flags.preview_mode or flags.preview_continuous)
+
+    # Pure cleanup: -c / -C / -CF without -gg
+    if (flags.cleanup_mode > 0 or flags.cleanup_fdb) and flags.go_mode != _GO_CLEAN_REBUILD:
+        _run_clean(tex_files, cfg, cleanup_mode=flags.cleanup_mode, cleanup_fdb=flags.cleanup_fdb)
         return
 
     # -gg: clean first, then fall through to build
     if flags.go_mode == _GO_CLEAN_REBUILD:
-        _stub_clean(tex_files, cfg)
+        _run_clean(tex_files, cfg, cleanup_mode=flags.cleanup_mode, cleanup_fdb=flags.cleanup_fdb)
 
     if flags.preview_continuous:
-        _stub_watch(tex_files, cfg)
+        _run_watch(tex_files, cfg)
     else:
-        _stub_build(tex_files, cfg)
+        _run_build(tex_files, cfg)
 
 
 # ── entry point ───────────────────────────────────────────────────────────────

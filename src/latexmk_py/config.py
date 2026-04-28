@@ -145,6 +145,7 @@ class Config:
     custom_deps: tuple[CustomDep, ...] = ()
     # runtime state -- not from TOML; set by CLI
     force: bool = False
+    preview_mode: bool = False
     norc: bool = False
     extra_rc_files: tuple[str, ...] = ()
 

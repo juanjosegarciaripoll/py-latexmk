@@ -882,3 +882,60 @@ def test_log_path_uses_aux_dir(tmp_path: Path) -> None:
     rdb = RuleDatabase(tex, cfg)
     rule = init_rules(tex, cfg)[0]
     assert rdb._log_path(rule) == aux / "doc.log"  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+
+
+# ---------------------------------------------------------------------------
+# T16: preview / pvc watch loop
+# ---------------------------------------------------------------------------
+
+
+def test_watch_timeout_exits_cleanly(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = replace(
+        _default_cfg(tmp_path),
+        preview_mode=True,
+        preview=replace(Config().preview, sleep_time=0.01, timeout_mins=0.0005),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    with (
+        patch.object(rdb, "build", return_value=0),
+        patch("latexmk_py.rdb.open_viewer", return_value=None),
+    ):
+        assert rdb.watch() == 0
+    out = capsys.readouterr().out
+    assert "Watching for updated files" in out
+    assert "Timeout. Exiting." in out
+
+
+def test_watch_rebuilds_and_refreshes_on_change(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = replace(
+        _default_cfg(tmp_path),
+        preview_mode=True,
+        preview=replace(Config().preview, sleep_time=0.01, timeout_mins=0.001),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    changed_state = iter([True, False, False])
+
+    def _changed() -> bool:
+        return next(changed_state, False)
+
+    with (
+        patch.object(rdb, "build", side_effect=[0, 0]) as mock_build,
+        patch.object(rdb, "_any_source_changed", side_effect=_changed),
+        patch("latexmk_py.rdb.open_viewer", return_value=None),
+        patch("latexmk_py.rdb.refresh_viewer", return_value=None) as mock_refresh,
+    ):
+        assert rdb.watch() == 0
+    assert mock_build.call_count >= 2
+    assert mock_refresh.call_count == 1
+
+
+def test_any_source_changed_detects_md5_change(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = _default_cfg(tmp_path)
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    source = rdb.rules[0].source
+    rdb.rules[0].source_md5[source] = "old"
+    assert rdb._any_source_changed() is True  # noqa: SLF001  # type: ignore[reportPrivateUsage]

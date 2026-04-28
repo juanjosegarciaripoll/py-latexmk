@@ -13,3 +13,4 @@
 - T13: Implemented `cleaner.py` — `clean()` for `-c` (intermediate), `-C` (+ final), and `-CF` (fdb only); searches `out_dir`, `aux_dir`, and `tex.parent`; removes cusdep-generated files when `includes_cusdep_generated=True`.
 - T14: Added `postscript_mode=1` (latex→dvips→.ps) and `xdv_mode=1` (xelatex→.xdv only) to `init_rules`; moved `xdvipdfmx` command into `CommandsConfig`; refactored `build()` into `_run_convergence_loop` + `_run_postprocess` so postprocess rules (dvips, ps2pdf, xdvipdfmx) run once after primary/secondary convergence.
 - T15: Implemented `deps.py` with make-compatible dependency output (`-M`/`-deps`, `-MF`, `-MP`, and space escaping modes `none|unix|nmake`) and integrated dependency emission at the end of successful builds.
+- T16: Implemented viewer launch/refresh (`viewer.py`) and `RuleDatabase.watch()` for `-pv`/`-pvc` with source polling + MD5 confirmation, timeout handling, clean SIGINT exit, and CLI dispatch integration.

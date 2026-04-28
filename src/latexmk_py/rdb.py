@@ -22,6 +22,7 @@ from latexmk_py.parsers.fls import parse_fls
 from latexmk_py.parsers.log import parse_log
 from latexmk_py.rules import Rule, compute_md5, init_rules, out_of_date, topo_sort
 from latexmk_py.runner import run_command
+from latexmk_py.viewer import open_viewer, refresh_viewer
 
 if TYPE_CHECKING:
     from latexmk_py.config import Config
@@ -60,6 +61,7 @@ class RuleDatabase:
         self.cfg = cfg
         self.rules: list[Rule] = []
         self._rule_map: dict[str, Rule] = {}
+        self._stat_cache: dict[Path, tuple[float, int]] = {}
 
     # ------------------------------------------------------------------
     # Private helpers — directory resolution
@@ -522,6 +524,33 @@ class RuleDatabase:
                     return 12
         return None
 
+    def _final_output(self) -> Path:
+        """Return final output path for the current build mode."""
+        suffix = ".pdf"
+        if self.cfg.build.pdf_mode == 0:
+            if self.cfg.build.postscript_mode:
+                suffix = ".ps"
+            elif self.cfg.build.dvi_mode:
+                suffix = ".dvi"
+        return self._out_dir() / f"{self.tex.stem}{suffix}"
+
+    def _any_source_changed(self) -> bool:
+        """Stat known sources and confirm changed candidates via MD5."""
+        for rule in self.rules:
+            for path in [rule.source, *rule.extra_sources]:
+                if not path.exists():
+                    continue
+                stat = path.stat()
+                key = (stat.st_mtime, stat.st_size)
+                if self._stat_cache.get(path) == key:
+                    continue
+                old_md5 = rule.source_md5.get(path, "")
+                new_md5 = compute_md5(path)
+                self._stat_cache[path] = key
+                if new_md5 != old_md5:
+                    return True
+        return False
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -560,4 +589,29 @@ class RuleDatabase:
 
         Mirrors the pvc loop in ``latexmk.pl`` (lines ~4000-4200).
         """
-        raise NotImplementedError("latexmk: -pvc not yet implemented (T16)")
+        rc = self.build()
+        if rc != 0 and not self.cfg.force:
+            return rc
+
+        output = self._final_output()
+        proc = open_viewer(output, self.cfg) if self.cfg.preview_mode else None
+        start_time = time.monotonic()
+        print("Latexmk: Watching for updated files (press Ctrl+C to stop) ...")  # noqa: T201
+
+        try:
+            while True:
+                time.sleep(self.cfg.preview.sleep_time)
+                if self._any_source_changed():
+                    rc = self.build()
+                    if rc == 0 or self.cfg.force:
+                        proc = refresh_viewer(output, proc, self.cfg)
+                    elif not self.cfg.force:
+                        return rc
+                timeout = self.cfg.preview.timeout_mins
+                if timeout > 0 and time.monotonic() - start_time > timeout * 60:
+                    print("Latexmk: Timeout. Exiting.")  # noqa: T201
+                    break
+        except KeyboardInterrupt:
+            print("\nLatexmk: Interrupt received. Exiting.")  # noqa: T201
+
+        return 0

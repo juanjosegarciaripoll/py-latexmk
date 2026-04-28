@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import pytest
 from latexmk_py.config import DepsConfig
 from latexmk_py.deps import write_deps
 from latexmk_py.rules import Rule
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def _rule(
@@ -58,7 +60,12 @@ def test_write_deps_uses_postprocess_target(
     tex = tmp_path / "doc.tex"
     rules = [
         _rule(name="latex", kind="primary", source=tex, dest=tmp_path / "doc.dvi"),
-        _rule(name="dvipdf", kind="postprocess", source=tmp_path / "doc.dvi", dest=tmp_path / "doc.pdf"),
+        _rule(
+            name="dvipdf",
+            kind="postprocess",
+            source=tmp_path / "doc.dvi",
+            dest=tmp_path / "doc.pdf",
+        ),
     ]
     write_deps(rules, DepsConfig(enabled=True, file="-"), tex)
     out = capsys.readouterr().out
@@ -88,7 +95,12 @@ def test_write_deps_phony_targets(tmp_path: Path) -> None:
     dep_file = tmp_path / "deps.d"
     rules = [
         _rule(name="pdflatex", kind="primary", source=tex, dest=tmp_path / "doc.pdf"),
-        _rule(name="bibtex_doc", kind="secondary", source=tmp_path / "doc.aux", dest=tmp_path / "doc.bbl"),
+        _rule(
+            name="bibtex_doc",
+            kind="secondary",
+            source=tmp_path / "doc.aux",
+            dest=tmp_path / "doc.bbl",
+        ),
     ]
 
     write_deps(rules, DepsConfig(enabled=True, file=str(dep_file), phony=True), tex)

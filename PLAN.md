@@ -179,6 +179,6 @@ Secondary: `pip install .` / `uv tool install`.
 | T13 | Cleanup (-c, -C, -CF) | `done` |
 | T14 | DVI / PS modes | `done` |
 | T15 | Dependency output (-M, -deps) | `done` |
-| T16 | Preview & -pvc | `todo` |
+| T16 | Preview & -pvc | `done` |
 | T17 | Integration tests | `todo` |
 | T18 | Distribution (PyInstaller, install.py) | `todo` |
