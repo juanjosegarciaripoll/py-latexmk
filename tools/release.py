@@ -6,12 +6,15 @@ import argparse
 import hashlib
 import os
 import platform
+import re
+import shutil
 import subprocess
 import sys
 import tarfile
 import tomllib
 import zipfile
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
@@ -205,23 +208,71 @@ def run_pyinstaller() -> None:
         raise RuntimeError(msg)
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse CLI options."""
-    parser = argparse.ArgumentParser(
-        description="Generate release artifacts from PyInstaller dist output.",
-    )
-    parser.add_argument(
-        "--dist-dir",
-        type=Path,
-        default=Path("dist"),
-        help="Directory containing PyInstaller output (default: dist).",
-    )
-    return parser.parse_args()
+def parse_tag_version(tag: str) -> str:
+    """Parse and validate version from a v-prefixed tag."""
+    if not re.fullmatch(r"v[0-9.]+", tag):
+        msg = f"Tag '{tag}' does not match required pattern v[0-9.]*"
+        raise ValueError(msg)
+    version = tag.removeprefix("v")
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*", version):
+        msg = f"Version '{version}' is not a valid semantic version core."
+        raise ValueError(msg)
+    return version
 
 
-def main() -> int:
-    """Run artifact generation and print generated paths."""
-    args = parse_args()
+def update_pyproject_version(pyproject_path: Path, version: str) -> None:
+    """Set project.version in pyproject.toml."""
+    text = pyproject_path.read_text(encoding="utf-8")
+    updated = re.sub(r'(?m)^version\s*=\s*"[^"]+"$', f'version = "{version}"', text, count=1)
+    pyproject_path.write_text(updated, encoding="utf-8")
+
+
+def build_release_notes(version: str, date_ymd: str, output_path: Path) -> None:
+    """Create release notes from changelog Unreleased section."""
+    changelog_path = Path("CHANGELOG.md")
+    if not changelog_path.exists():
+        changelog_path = Path("CHANGES.md")
+    if not changelog_path.exists():
+        msg = "Neither CHANGELOG.md nor CHANGES.md found."
+        raise FileNotFoundError(msg)
+
+    text = changelog_path.read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^##\s+Unreleased\s*$\n(.*?)(?=^##\s|\Z)", text)
+    if match is None:
+        notes = "- No changelog entries were found under `Unreleased`."
+    else:
+        body = match.group(1).strip()
+        notes = body or "- No changelog entries were found under `Unreleased`."
+
+    heading = f"## v{version} - {date_ymd}"
+    output = f"{heading}\n\n{notes}\n"
+    output_path.write_text(output, encoding="utf-8")
+
+
+def _cmd_metadata(args: argparse.Namespace) -> int:
+    tag = args.tag or os.environ.get("GITHUB_REF_NAME", "")
+    version = parse_tag_version(tag)
+    release_date = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+    if args.notes_out is not None:
+        build_release_notes(version, release_date, args.notes_out)
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        output_file = Path(github_output)
+        with output_file.open("a", encoding="utf-8") as handle:
+            handle.write(f"version={version}\n")
+            handle.write(f"release_date={release_date}\n")
+    print(f"version={version}")
+    print(f"release_date={release_date}")
+    return 0
+
+
+def _cmd_set_version(args: argparse.Namespace) -> int:
+    update_pyproject_version(Path("pyproject.toml"), args.version)
+    print(f"Set pyproject version to {args.version}")
+    return 0
+
+
+def _cmd_build(args: argparse.Namespace) -> int:
     run_pyinstaller()
     artifacts = build_release_artifacts(args.dist_dir)
     print(f"Binary: {artifacts.binary}")
@@ -231,6 +282,62 @@ def main() -> int:
     for path in artifacts.winget_manifest_files:
         print(f"Winget manifest: {path}")
     return 0
+
+
+def _cmd_build_sdist() -> int:
+    uv_bin = shutil.which("uv")
+    if uv_bin is None:
+        msg = "Could not find 'uv' executable in PATH."
+        raise RuntimeError(msg)
+    result = subprocess.run([uv_bin, "build", "--sdist"], check=False)  # noqa: S603
+    if result.returncode != 0:
+        msg = f"uv build --sdist failed with exit code {result.returncode}"
+        raise RuntimeError(msg)
+    return 0
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse CLI options."""
+    parser = argparse.ArgumentParser(description="Release tooling for py-latexmk.")
+    subparsers = parser.add_subparsers(dest="command")
+
+    p_meta = subparsers.add_parser("metadata", help="Derive release metadata from tag.")
+    p_meta.add_argument("--tag", default=None, help="Tag to parse (default: GITHUB_REF_NAME).")
+    p_meta.add_argument(
+        "--notes-out",
+        type=Path,
+        default=Path("release-notes.md"),
+        help="Output path for generated release notes.",
+    )
+
+    p_set = subparsers.add_parser("set-version", help="Set project version in pyproject.toml.")
+    p_set.add_argument("version")
+
+    p_build = subparsers.add_parser("build", help="Run pyinstaller and build release artifacts.")
+    p_build.add_argument(
+        "--dist-dir",
+        type=Path,
+        default=Path("dist"),
+        help="Directory containing PyInstaller output (default: dist).",
+    )
+
+    subparsers.add_parser("build-sdist", help="Build source distribution (sdist).")
+    return parser.parse_args()
+
+
+def main() -> int:
+    """Dispatch release helper commands."""
+    args = parse_args()
+    if args.command in (None, "build"):
+        return _cmd_build(args)
+    if args.command == "metadata":
+        return _cmd_metadata(args)
+    if args.command == "set-version":
+        return _cmd_set_version(args)
+    if args.command == "build-sdist":
+        return _cmd_build_sdist()
+    msg = f"Unknown command: {args.command}"
+    raise ValueError(msg)
 
 
 if __name__ == "__main__":

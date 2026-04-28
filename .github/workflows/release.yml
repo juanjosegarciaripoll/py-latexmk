@@ -18,66 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Derive and validate version
-      id: meta
-      shell: bash
-      run: |
-        set -euo pipefail
-        tag="${GITHUB_REF_NAME}"
-        if [[ ! "$tag" =~ ^v[0-9.]+$ ]]; then
-          echo "Tag '$tag' does not match required pattern v[0-9.]*" >&2
-          exit 1
-        fi
-        version="${tag#v}"
-        if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
-          echo "Version '$version' is not a valid semantic version core." >&2
-          exit 1
-        fi
-        echo "version=$version" >> "$GITHUB_OUTPUT"
-        echo "release_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
 
-      - name: Build release notes from changelog
-      shell: bash
-      env:
-        VERSION: ${{ steps.meta.outputs.version }}
-        RELEASE_DATE: ${{ steps.meta.outputs.release_date }}
-      run: |
-        set -euo pipefail
-        changelog="CHANGELOG.md"
-        if [[ ! -f "$changelog" ]]; then
-          changelog="CHANGES.md"
-        fi
-        if [[ ! -f "$changelog" ]]; then
-          echo "Neither CHANGELOG.md nor CHANGES.md found." >&2
-          exit 1
-        fi
+      - name: Install dev dependencies
+        run: uv sync --all-extras --dev
 
-        python - <<'PY'
-        from __future__ import annotations
-
-        from pathlib import Path
-        import os
-        import re
-
-        version = os.environ["VERSION"]
-        release_date = os.environ["RELEASE_DATE"]
-
-        changelog_path = Path("CHANGELOG.md")
-        if not changelog_path.exists():
-          changelog_path = Path("CHANGES.md")
-
-        text = changelog_path.read_text(encoding="utf-8")
-        match = re.search(r"(?ms)^##\s+Unreleased\s*$\n(.*?)(?=^##\s|\Z)", text)
-        if match is None:
-          notes = "- No changelog entries were found under `Unreleased`."
-        else:
-          body = match.group(1).strip()
-          notes = body if body else "- No changelog entries were found under `Unreleased`."
-
-        heading = f"## v{version} - {release_date}"
-        output = f"{heading}\n\n{notes}\n"
-        Path("release-notes.md").write_text(output, encoding="utf-8")
-        PY
+      - name: Derive metadata and notes
+        id: meta
+        run: uv run python tools/release.py metadata --notes-out release-notes.md
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4
@@ -101,35 +51,12 @@ jobs:
           python-version: "3.13"
 
       - name: Set release version in pyproject.toml
-        shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from __future__ import annotations
-
-          import os
-          from pathlib import Path
-          import re
-
-          version = os.environ["VERSION"]
-          pyproject = Path("pyproject.toml")
-          text = pyproject.read_text(encoding="utf-8")
-          text = re.sub(
-              r'(?m)^version\s*=\s*"[^\"]+"$',
-              f'version = "{version}"',
-              text,
-              count=1,
-          )
-          pyproject.write_text(text, encoding="utf-8")
-          PY
+        run: uv run python tools/release.py set-version "$VERSION"
 
       - name: Install dev dependencies
         run: uv sync --all-extras --dev
-
-      - name: ruff format check
-        run: uv run ruff format --check .
 
       - name: ruff lint
         run: uv run ruff check .
@@ -163,40 +90,20 @@ jobs:
           python-version: "3.13"
 
       - name: Set release version in pyproject.toml
-        shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from __future__ import annotations
-
-          import os
-          from pathlib import Path
-          import re
-
-          version = os.environ["VERSION"]
-          pyproject = Path("pyproject.toml")
-          text = pyproject.read_text(encoding="utf-8")
-          text = re.sub(
-              r'(?m)^version\s*=\s*"[^\"]+"$',
-              f'version = "{version}"',
-              text,
-              count=1,
-          )
-          pyproject.write_text(text, encoding="utf-8")
-          PY
+        run: uv run python tools/release.py set-version "$VERSION"
 
       - name: Install dev dependencies
         run: uv sync --all-extras --dev
 
       - name: Build standalone binary
         if: matrix.target != 'source'
-        run: uv run python tools/release.py
+        run: uv run python tools/release.py build
 
       - name: Build source tarball
         if: matrix.target == 'source'
-        run: uv build --sdist
+        run: uv run python tools/release.py build-sdist
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
