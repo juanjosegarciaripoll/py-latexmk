@@ -1,5 +1,5 @@
 # T11: Custom Dependencies
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T08, T10
 
 ## Goal

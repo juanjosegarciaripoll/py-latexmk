@@ -24,6 +24,7 @@ from latexmk_py.runner import run_command
 if TYPE_CHECKING:
     from latexmk_py.config import Config
     from latexmk_py.parsers.dotaux import AuxResult
+    from latexmk_py.parsers.log import LogResult
 
 logger = logging.getLogger(__name__)
 
@@ -239,10 +240,40 @@ class RuleDatabase:
         self._maybe_add_makeindex_rule(primary)
         self._maybe_add_glossaries_rule(primary)
 
-    def _mark_primary_stale(self, secondary: Rule) -> None:
-        """Mark primary rules stale after a secondary rule produces output.
+    def _add_cusdep_rules(self, primary: Rule, log: LogResult) -> None:
+        """Create cusdep rules for missing files that match a configured custom dependency.
 
-        Ensures pdflatex reruns to incorporate the fresh .bbl file.
+        Mirrors ``rdb_check_for_cusdep`` in ``latexmk.pl`` (lines ~9800-9870).
+        """
+        for missing in log.missing_files:
+            stem = Path(missing).stem
+            for cusdep in self.cfg.custom_deps:
+                if not missing.endswith(f".{cusdep.to_ext}"):
+                    continue
+                source = primary.source.parent / f"{stem}.{cusdep.from_ext}"
+                dest = primary.source.parent / f"{stem}.{cusdep.to_ext}"
+                if not source.exists():
+                    if cusdep.must:
+                        raise FileMissingError(f"latexmk: custom dep source not found: {source}")
+                    continue
+                name = f"cusdep_{cusdep.from_ext}_{cusdep.to_ext}_{stem}"
+                if name in self._rule_map:
+                    continue
+                rule = Rule(
+                    name=name,
+                    kind="cusdep",
+                    command=cusdep.command,
+                    source=source,
+                    dest=dest,
+                    base=primary.source.parent / stem,
+                )
+                self.rules.append(rule)
+                self._rule_map[name] = rule
+
+    def _mark_primary_stale(self, secondary: Rule) -> None:
+        """Mark primary rules stale after a secondary or cusdep rule produces output.
+
+        Ensures pdflatex reruns to incorporate the fresh generated file.
         """
         for r in self.rules:
             if r.kind == "primary" and r.base == secondary.base:
@@ -292,14 +323,14 @@ class RuleDatabase:
                 rule.dest_md5[p] = compute_md5(p)
 
     def _update_deps(self, rule: Rule) -> None:
-        """Parse .fls / .log (primary) or mark primaries stale (secondary).
+        """Parse .fls / .log (primary) or mark primaries stale (secondary/cusdep).
 
         Mirrors ``rdb_set_dependences`` in ``latexmk.pl`` (lines ~9350-9550).
         """
         if rule.kind == "primary":
             self._update_primary_deps(rule)
             self._add_secondary_rules(rule)
-        elif rule.kind == "secondary":
+        elif rule.kind in ("secondary", "cusdep"):
             self._mark_primary_stale(rule)
 
     def _update_primary_deps(self, rule: Rule) -> None:
@@ -316,6 +347,8 @@ class RuleDatabase:
         log_result = parse_log(log_path)
         if log_result.rerun_needed:
             rule.out_of_date = True
+        if self.cfg.custom_deps:
+            self._add_cusdep_rules(rule, log_result)
 
         for p in rule.extra_sources:
             if p.exists():

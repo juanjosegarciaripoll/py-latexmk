@@ -174,7 +174,7 @@ Secondary: `pip install .` / `uv tool install`.
 | T08 | Primary build loop (pdflatex / lualatex / xelatex) | `done` |
 | T09 | Bibliography (bibtex + biber) | `done` |
 | T10 | Makeindex & glossaries | `done` |
-| T11 | Custom dependencies (TOML cusdep) | `todo` |
+| T11 | Custom dependencies (TOML cusdep) | `done` |
 | T12 | Output & aux directories | `todo` |
 | T13 | Cleanup (-c, -C, -CF) | `todo` |
 | T14 | DVI / PS modes | `todo` |

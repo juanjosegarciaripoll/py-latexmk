@@ -610,3 +610,128 @@ def test_makeindex_and_bibtex_coexist(tmp_path: Path) -> None:
     names = [r.name for r in rdb.rules]
     assert "bibtex_doc" in names
     assert "makeindex_doc" in names
+
+
+# ---------------------------------------------------------------------------
+# Custom dependency (cusdep) — unit tests
+# ---------------------------------------------------------------------------
+
+_LOG_MISSING_EPS = LogResult(
+    rerun_needed=False,
+    missing_files=frozenset(["figname.eps"]),
+    warnings=(),
+    errors=(),
+    bad_references=0,
+    bad_citations=0,
+)
+
+_CUSDEP_FIG2EPS = CustomDep(from_ext="fig", to_ext="eps", must=False, command="fig2dev -Leps %S %D")
+
+
+def _cfg_with_cusdep(tmp_path: Path, *, must: bool = False) -> Config:
+    return Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        custom_deps=(CustomDep(from_ext="fig", to_ext="eps", must=must, command="fig2dev %S %D"),),
+    )
+
+
+def test_cusdep_rule_added_when_source_exists(tmp_path: Path) -> None:
+    (tmp_path / "figname.fig").write_bytes(b"fig content")
+    tex = _make_tex(tmp_path)
+    cfg = _cfg_with_cusdep(tmp_path)
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert any(r.name == "cusdep_fig_eps_figname" for r in rdb.rules)
+
+
+def test_cusdep_rule_source_dest_paths(tmp_path: Path) -> None:
+    (tmp_path / "figname.fig").write_bytes(b"fig content")
+    tex = _make_tex(tmp_path)
+    cfg = _cfg_with_cusdep(tmp_path)
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    cusdep = next(r for r in rdb.rules if r.name == "cusdep_fig_eps_figname")
+    assert cusdep.source == tmp_path / "figname.fig"
+    assert cusdep.dest == tmp_path / "figname.eps"
+    assert cusdep.kind == "cusdep"
+
+
+def test_cusdep_skipped_when_source_missing_must_false(tmp_path: Path) -> None:
+    # No .fig file created
+    tex = _make_tex(tmp_path)
+    cfg = _cfg_with_cusdep(tmp_path, must=False)
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any(r.name.startswith("cusdep_") for r in rdb.rules)
+
+
+def test_cusdep_raises_when_source_missing_must_true(tmp_path: Path) -> None:
+    tex = _make_tex(tmp_path)
+    cfg = _cfg_with_cusdep(tmp_path, must=True)
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    with pytest.raises(FileMissingError):
+        rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+
+
+def test_cusdep_rule_not_added_twice(tmp_path: Path) -> None:
+    (tmp_path / "figname.fig").write_bytes(b"fig content")
+    tex = _make_tex(tmp_path)
+    cfg = _cfg_with_cusdep(tmp_path)
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert sum(1 for r in rdb.rules if r.name == "cusdep_fig_eps_figname") == 1
+
+
+def test_cusdep_not_matched_when_ext_differs(tmp_path: Path) -> None:
+    (tmp_path / "figname.svg").write_bytes(b"svg")
+    tex = _make_tex(tmp_path)
+    cfg = _cfg_with_cusdep(tmp_path)  # cusdep is fig→eps, missing is .eps but source is .svg
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    rdb._add_cusdep_rules(rdb.rules[0], _LOG_MISSING_EPS)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    # .svg exists but cusdep expects .fig; .fig absent → no rule (must=False)
+    assert not any(r.name.startswith("cusdep_") for r in rdb.rules)
+
+
+def test_mock_build_with_cusdep(tmp_path: Path) -> None:
+    """Full build: cusdep runs, primary reruns with generated file."""
+    (tmp_path / "figname.fig").write_bytes(b"fig content")
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        custom_deps=(_CUSDEP_FIG2EPS,),
+    )
+    run_calls: list[str] = []
+
+    def _fake(cmd: str, *, dest: Path, **__: object) -> RunResult:
+        run_calls.append(cmd)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"%PDF-1.4 fake")
+        if "fig2dev" in cmd:
+            (tmp_path / "figname.eps").write_bytes(b"eps content")
+        return RunResult(exit_code=0, stdout="", stderr="", elapsed=0.1)
+
+    log_first = _LOG_MISSING_EPS
+    log_rest = _NO_RERUN_LOG
+
+    with (
+        patch("latexmk_py.rdb.run_command", side_effect=_fake),
+        patch("latexmk_py.rdb.parse_log", side_effect=[log_first, log_rest, log_rest]),
+        patch("latexmk_py.rdb.parse_fls", return_value=_EMPTY_FLS),
+    ):
+        result = RuleDatabase(tex, cfg).build()
+
+    assert result == 0
+    assert any("fig2dev" in c for c in run_calls), "cusdep converter should have run"
