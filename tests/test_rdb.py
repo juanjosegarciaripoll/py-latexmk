@@ -506,7 +506,7 @@ def test_rule_cwd_secondary_no_fudge(tmp_path: Path) -> None:
     rdb = RuleDatabase(tex, cfg)
     rules = init_rules(tex, cfg)
     secondary = replace(rules[0], kind="secondary")
-    assert rdb._rule_cwd(secondary) is None  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert rdb._rule_cwd(secondary) == tex.parent  # noqa: SLF001  # type: ignore[reportPrivateUsage]
 
 
 def test_latex_extra_options_not_forwarded_to_secondary(tmp_path: Path) -> None:
