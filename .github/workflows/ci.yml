@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ── Lint & type-check ────────────────────────────────────────────────────────
+  # Runs only on Linux; formatting/typing is platform-independent.
+  lint:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dev dependencies
+        run: uv sync --all-extras --dev
+
+      - name: ruff format check
+        run: uv run ruff format --check .
+
+      - name: ruff lint
+        run: uv run ruff check .
+
+      - name: basedpyright
+        run: uv run basedpyright
+
+      - name: mypy
+        run: uv run mypy .
+
+  # ── Tests (unit + integration) ───────────────────────────────────────────────
+  # Runs the full test suite including --runintegration on both POSIX and Windows.
+  test:
+    name: Test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dev dependencies
+        run: uv sync --all-extras --dev
+
+      # Install a minimal TeX Live that covers all current and near-future tasks:
+      #   scheme-basic        — pdflatex + article.cls (T08)
+      #   collection-luatex   — lualatex (T08)
+      #   collection-xetex    — xelatex + xdvipdfmx (T08, T14)
+      #   biber               — biber binary (T09)
+      #   collection-bibtexextra — BibTeX extras (T09)
+      #   makeindex           — makeindex binary (T10)
+      - name: Install TeX Live
+        uses: TeX-Live/setup-texlive-action@v4
+        with:
+          packages: |
+            scheme-basic
+            collection-luatex
+            collection-xetex
+            biber
+            collection-bibtexextra
+            makeindex
+
+      - name: Run tests (unit + integration)
+        run: >-
+          uv run pytest -q
+          --runintegration
+          --cov=latexmk_py
+          --cov-report=term-missing
+          --cov-fail-under=85
