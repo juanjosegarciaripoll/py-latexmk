@@ -39,6 +39,7 @@ jobs:
   # Runs the full test suite including --runintegration on both POSIX and Windows.
   test:
     name: Test / ${{ matrix.os }}
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
