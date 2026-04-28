@@ -66,13 +66,13 @@ def binary_name_for_platform(platform_id: str) -> str:
 
 def create_relocatable_archive(binary: Path, output_dir: Path, artifact_stem: str) -> Path:
     """Create a platform-appropriate relocatable archive containing the executable."""
-    if sys.platform == "win32":
+    if binary.suffix.lower() == ".exe":
         archive_path = output_dir / f"{artifact_stem}.zip"
         with zipfile.ZipFile(archive_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.write(binary, arcname=binary.name)
         return archive_path
 
-    archive_path = output_dir / f"{artifact_stem}.tar.gz"  # type: ignore[unreachable]
+    archive_path = output_dir / f"{artifact_stem}.tar.gz"
     with tarfile.open(archive_path, mode="w:gz") as archive:
         archive.add(binary, arcname=binary.name)
     return archive_path
