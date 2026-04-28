@@ -1,5 +1,5 @@
 # T13: Cleanup (-c, -C, -CF)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T02, T07
 
 ## Goal
