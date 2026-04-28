@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T06 — FDB read/write
-**Task file:** [`ai/T06-fdb.md`](./ai/T06-fdb.md)
+**Current task:** T07 — Rule engine (Rule dataclass, out-of-date, topo-sort)
+**Task file:** [`ai/T07-rules.md`](./ai/T07-rules.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.

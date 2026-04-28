@@ -1,5 +1,5 @@
 # T06: .fdb_latexmk Read/Write
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T01
 
 ## Goal

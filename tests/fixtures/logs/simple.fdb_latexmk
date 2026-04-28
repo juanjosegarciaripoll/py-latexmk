@@ -1,0 +1,8 @@
+# Fdb version 4
+["pdflatex"] 1714243200.5 "simple.tex" "simple.pdf" "simple" 1714243201.0 0
+  "simple.tex" 1714243100.0 1234 abc123def456abc10123456789abcdef ""
+  "article.cls" 1700000000.0 56789 feedbeef0000feed0123456789abcdef ""
+  (generated)
+  "simple.pdf"
+  "simple.log"
+  (rewritten before read)
