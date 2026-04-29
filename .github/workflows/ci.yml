@@ -12,6 +12,12 @@ jobs:
   # Runs only on Linux; formatting/typing is platform-independent.
   lint:
     name: Lint & type-check
+    # Skip when a release tag is being pushed — release.yml calls this workflow
+    # internally, so CI would run twice for the same commit otherwise.
+    # jj-release always uses "chore: release X.Y.Z" as the commit message.
+    if: >-
+      github.event_name != 'push' ||
+      !startsWith(github.event.head_commit.message, 'chore: release ')
     runs-on: ubuntu-latest
 
     steps:
