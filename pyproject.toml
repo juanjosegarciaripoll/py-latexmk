@@ -17,6 +17,9 @@ build-backend = "hatchling.build"
 packages = ["src/latexmk_py"]
 
 [tool.uv]
+
+[tool.uv.sources]
+jj-release = { git = "https://github.com/juanjosegarciaripoll/jj-release.git" }
 # managed env — do not edit manually
 
 [tool.ruff]
@@ -76,6 +79,7 @@ add_to_path = true
 [dependency-groups]
 dev = [
     "basedpyright>=1.39.3",
+    "jj-release",
     "mypy>=1.20.2",
     "pyinstaller>=6.20.0",
     "pytest>=8.0",
