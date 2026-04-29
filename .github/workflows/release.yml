@@ -16,14 +16,14 @@ jobs:
   # ── Source archive ─────────────────────────────────────────────────────────
   source:
     needs: [ci]
-    uses: juanjosegarciaripoll/jj-release/.github/workflows/source.yml@main
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/source.yml@master
     with:
       ref: ${{ github.ref }}
 
   # ── Windows relocatable binary ────────────────────────────────────────────
   relocatable-windows:
     needs: [ci]
-    uses: juanjosegarciaripoll/jj-release/.github/workflows/relocatable.yml@main
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/relocatable.yml@master
     with:
       ref: ${{ github.ref }}
       os: windows-latest
@@ -31,14 +31,14 @@ jobs:
   # ── Windows installer ─────────────────────────────────────────────────────
   installer:
     needs: [relocatable-windows]
-    uses: juanjosegarciaripoll/jj-release/.github/workflows/installer.yml@main
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/installer.yml@master
     with:
       ref: ${{ github.ref }}
 
   # ── GitHub release ────────────────────────────────────────────────────────
   release:
     needs: [source, relocatable-windows, installer]
-    uses: juanjosegarciaripoll/jj-release/.github/workflows/release.yml@main
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/release.yml@master
     with:
       ref: ${{ github.ref }}
     secrets:
