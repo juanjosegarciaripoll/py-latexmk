@@ -12,10 +12,14 @@ jobs:
   # Runs only on Linux; formatting/typing is platform-independent.
   lint:
     name: Lint & type-check
-    # Skip when a release tag is being pushed — release.yml calls this workflow
-    # internally, so CI would run twice for the same commit otherwise.
-    # jj-release always uses "chore: release X.Y.Z" as the commit message.
+    # Skip the standalone branch-push run when a release tag was pushed alongside
+    # main — release.yml calls this workflow internally on the tag ref, so CI
+    # would run twice for the same commit otherwise. jj-release always uses
+    # "chore: release X.Y.Z" as the commit message. github.ref is refs/heads/main
+    # for the standalone run and refs/tags/vX.Y.Z when called from release.yml,
+    # which lets us tell them apart even though both inherit the push event.
     if: >-
+      startsWith(github.ref, 'refs/tags/') ||
       github.event_name != 'push' ||
       !startsWith(github.event.head_commit.message, 'chore: release ')
     runs-on: ubuntu-latest
