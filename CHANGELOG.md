@@ -2,8 +2,7 @@
 
 All notable user-facing changes to this project are documented in this file.
 
-## Unreleased
-
+## 0.2.1 — 2026-04-29
 - Added GitHub release automation for version tags (`v*`) with quality gates,
   cross-platform artifact builds, and release asset publishing.
 - `--version` now keeps Perl latexmk as the primary version and can append the
