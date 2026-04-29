@@ -1,6 +1,6 @@
 # Changes
 
-## v0.1.1 — 2026-04-29
+## Unreleased
 
 - Replaced ad-hoc `tools/release.py`, `latexmk.spec`, and `packaging/` with the
   [jj-release](https://github.com/juanjosegarciaripoll/jj-release) reusable workflows.
