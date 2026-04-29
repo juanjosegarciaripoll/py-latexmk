@@ -1,6 +1,12 @@
 # Changes
 
-## Unreleased
+## v0.1.1 — 2026-04-29
+
+- Replaced ad-hoc `tools/release.py`, `latexmk.spec`, and `packaging/` with the
+  [jj-release](https://github.com/juanjosegarciaripoll/jj-release) reusable workflows.
+  The release pipeline now runs CI (lint + type-check + tests on Ubuntu and Windows) before
+  building artifacts, then produces a source archive, a Windows relocatable binary, and a
+  Windows installer, and publishes a GitHub release — all from a single `v*` tag push.
 
 - T18: Added release-distribution scaffolding with PyInstaller spec, `tools/release.py` artifact builder, generated winget manifests for Windows, and source-install documentation.
 - T05: Implemented `runner.py` — placeholder expansion (`%S %D %B %R %T %O %Y %Z`) and subprocess execution with shell-operator detection.

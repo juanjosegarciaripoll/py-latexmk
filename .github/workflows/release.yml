@@ -3,137 +3,43 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: write
 
 jobs:
-  prepare:
-    name: Prepare release metadata
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.meta.outputs.version }}
-      release_date: ${{ steps.meta.outputs.release_date }}
-    steps:
-      - uses: actions/checkout@v4
+  # ── CI gates ──────────────────────────────────────────────────────────────
+  ci:
+    uses: ./.github/workflows/ci.yml
 
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.13"
+  # ── Source archive ─────────────────────────────────────────────────────────
+  source:
+    needs: [ci]
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/source.yml@main
+    with:
+      ref: ${{ github.ref }}
 
-      - name: Install dev dependencies
-        run: uv sync --all-extras --dev
+  # ── Windows relocatable binary ────────────────────────────────────────────
+  relocatable-windows:
+    needs: [ci]
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/relocatable.yml@main
+    with:
+      ref: ${{ github.ref }}
+      os: windows-latest
 
-      - name: Derive metadata and notes
-        id: meta
-        run: uv run python tools/release.py metadata --notes-out release-notes.md
+  # ── Windows installer ─────────────────────────────────────────────────────
+  installer:
+    needs: [relocatable-windows]
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/installer.yml@main
+    with:
+      ref: ${{ github.ref }}
 
-      - name: Upload release notes
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-notes
-          path: release-notes.md
-
-  test:
-    name: Quality gates / ${{ matrix.os }}
-    needs: prepare
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.13"
-
-      - name: Set release version in pyproject.toml
-        run: uv run python tools/release.py set-version "${{ needs.prepare.outputs.version }}"
-
-      - name: Install dev dependencies
-        run: uv sync --all-extras --dev
-
-      - name: ruff lint
-        run: uv run ruff check .
-
-      - name: basedpyright
-        run: uv run basedpyright
-
-      - name: mypy
-        run: uv run mypy .
-
-      - name: pytest
-        run: uv run pytest -q
-
-  build:
-    name: Build artifacts / ${{ matrix.target }}
-    needs: [prepare, test]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            target: windows
-          - os: ubuntu-latest
-            target: source
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.13"
-
-      - name: Set release version in pyproject.toml
-        run: uv run python tools/release.py set-version "${{ needs.prepare.outputs.version }}"
-
-      - name: Install dev dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Build standalone binary
-        if: matrix.target != 'source'
-        run: uv run python tools/release.py build
-
-      - name: Build source tarball
-        if: matrix.target == 'source'
-        run: uv run python tools/release.py build-sdist
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifact-${{ matrix.target }}
-          path: |
-            dist/latexmk-*
-            dist/SHA256SUMS.txt
-            dist/*.tar.gz
-            dist/*.yaml
-
+  # ── GitHub release ────────────────────────────────────────────────────────
   release:
-    name: Publish GitHub release
-    needs: [prepare, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download release notes
-        uses: actions/download-artifact@v4
-        with:
-          name: release-notes
-          path: release-notes
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: artifact-*
-          path: release-assets
-          merge-multiple: true
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.prepare.outputs.version }}
-          name: v${{ needs.prepare.outputs.version }}
-          body_path: release-notes/release-notes.md
-          files: |
-            release-assets/*
+    needs: [source, relocatable-windows, installer]
+    uses: juanjosegarciaripoll/jj-release/.github/workflows/release.yml@main
+    with:
+      ref: ${{ github.ref }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
