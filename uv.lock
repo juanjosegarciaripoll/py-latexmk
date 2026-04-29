@@ -117,7 +117,7 @@ wheels = [
 [[package]]
 name = "jj-release"
 version = "0.1.0"
-source = { git = "https://github.com/juanjosegarciaripoll/jj-release.git#4b23d840cd6a319679f340bf1104dd8191d69271" }
+source = { git = "https://github.com/juanjosegarciaripoll/jj-release.git#def0e2b3798458c33615f57291a5c13b870a3eb4" }
 
 [[package]]
 name = "latexmk"
