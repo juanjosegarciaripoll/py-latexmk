@@ -26,7 +26,7 @@ uv tool update-shell
 Then you can install the tool directly from GitHub
 ```powershell
 uv tool install git+https://github.com/juanjosegarciaripoll/py-latexmk
-latexmk --version
+latexmk -version
 ```
 
 ## Usage
