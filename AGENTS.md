@@ -8,15 +8,15 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T18 — Release distribution (Windows binaries + release automation)
-**Task file:** [`ai/T18-distribution.md`](./ai/T18-distribution.md)
-**Status:** `done`
+**Current task:** T19 — TeX engine passthrough options
+**Task file:** [`ai/T19-passthrough-options.md`](./ai/T19-passthrough-options.md)
+**Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.
 
 When finishing or switching tasks: set **Status** to `in-progress` while working, `done` when the checklist passes. Mirror the status change in the task file's own `**Status:**` line and in the `PLAN.md` task table. Advance **Current task** to the next entry.
 
-Task order: T01 → T02 → T03 → T04 → T05 → T06 → T07 → T08 → T09 → T10 → T11 → T12 → T13 → T14 → T15 → T16 → T17 → T18
+Task order: T01 → T02 → T03 → T04 → T05 → T06 → T07 → T08 → T09 → T10 → T11 → T12 → T13 → T14 → T15 → T16 → T17 → T18 → T19 → T20 → T21 → T22
 
 ## 1. Goal
 
