@@ -2,13 +2,31 @@
 
 All notable user-facing changes to this project are documented in this file.
 
+## Unreleased
+
+- CLI now accepts TeX engine passthrough flags (`-synctex`, `-file-line-error`,
+  `-shell-escape`, `-max-print-line`, and ~40 others from latexmk.pl lines 549–668)
+  and forwards them to `*latex` via `latex_extra_options`.
+- Added `-latexoption=OPT` to append arbitrary options to every `*latex` invocation.
+- `-showextraoptions` now lists the full passthrough allowlist.
+- Log parser unwraps lines at the column specified by the `max_print_line` env var
+  (default 79), matching TeXLive behaviour.
+
 ## 0.2.4 — 2026-04-29
+
+- Replaced ad-hoc `tools/release.py`, `latexmk.spec`, and `packaging/` with the
+  [jj-release](https://github.com/juanjosegarciaripoll/jj-release) reusable workflows.
+  The release pipeline now runs CI (lint + type-check + tests on Ubuntu and Windows)
+  before building artifacts, then produces a source archive, a Windows relocatable
+  binary, and a Windows installer, and publishes a GitHub release — all from a single
+  `v*` tag push.
 
 ## 0.2.3 — 2026-04-29
 
 ## 0.2.2 — 2026-04-29
 
 ## 0.2.1 — 2026-04-29
+
 - Added GitHub release automation for version tags (`v*`) with quality gates,
   cross-platform artifact builds, and release asset publishing.
 - `--version` now keeps Perl latexmk as the primary version and can append the

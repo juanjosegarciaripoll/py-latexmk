@@ -5,9 +5,14 @@ Mirrors ``parse_log`` in ``latexmk.pl`` (lines 6119-6550).
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+# TeX wraps log output at this column; mirrors Perl's $log_wrap.
+# TeXLive uses lowercase "max_print_line" — do not capitalise (latexmk.pl line ~6119).
+LOG_WRAP: int = int(os.environ.get("max_print_line", "79"))  # noqa: SIM112
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,6 +82,17 @@ class LogResult:
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 
+def unwrap_log_lines(raw_lines: list[str]) -> list[str]:
+    """Join TeX log lines wrapped at LOG_WRAP columns."""
+    result: list[str] = []
+    for line in raw_lines:
+        if result and len(result[-1]) == LOG_WRAP:
+            result[-1] += line
+        else:
+            result.append(line)
+    return result
+
+
 def _match_warning(line: str) -> tuple[str, bool, bool] | None:
     """Return (text, is_ref, is_cit) if *line* matches a warning pattern."""
     for pattern, is_ref, is_cit in _WARNING_SPECS:
@@ -120,7 +136,8 @@ def parse_log(path: Path) -> LogResult:
     bad_references = 0
     bad_citations = 0
 
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+    raw = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    for line in unwrap_log_lines(raw):
         if _RERUN_RE.search(line):
             rerun_needed = True
 

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from latexmk_py.parsers.log import LogResult, parse_log
+import latexmk_py.parsers.log as log_mod
+from latexmk_py.parsers.log import LogResult, parse_log, unwrap_log_lines
+
+if TYPE_CHECKING:
+    import pytest
 
 FIXTURES = Path(__file__).parent / "fixtures" / "logs"
 
@@ -57,6 +62,22 @@ def test_parse_log_error_lines(tmp_path: Path) -> None:
     result = parse_log(log)
     assert any(line.startswith("!") for line in result.errors)
     assert any("main.tex:10:" in line for line in result.errors)
+
+
+def testunwrap_log_lines_joins_at_wrap_boundary() -> None:
+    wrap = log_mod.LOG_WRAP  # pyright: ignore[reportPrivateUsage]
+    first = "a" * wrap
+    second = "continuation"
+    result = unwrap_log_lines([first, second, "standalone"])
+    assert result == [first + second, "standalone"]
+
+
+def testunwrap_log_lines_respects_custom_wrap(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(log_mod, "LOG_WRAP", 10)
+    first = "x" * 10
+    second = "y"
+    result = unwrap_log_lines([first, second])
+    assert result == [first + second]
 
 
 def test_parse_log_no_rerun(tmp_path: Path) -> None:

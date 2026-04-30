@@ -33,6 +33,77 @@ _CLEAN_MODE_FULL = 2
 # Guards against splitting filenames that happen to contain '='.
 _OPT_ASSIGN = re.compile(r"^-[A-Za-z0-9][A-Za-z0-9-]*=")
 
+# Options recognised but not interpreted by latexmk; forwarded to *latex.
+# Source: latexmk.pl lines 549-668.
+_PASSTHROUGH_FLAGS: frozenset[str] = frozenset(
+    {
+        "-cnf-line",
+        "-draftmode",
+        "-enc",
+        "-etex",
+        "-file-line-error",
+        "-no-file-line-error",
+        "-fmt",
+        "-halt-on-error",
+        "-ipc",
+        "-ipc-start",
+        "-kpathsea-debug",
+        "-mktex",
+        "-no-mktex",
+        "-mltex",
+        "-output-comment",
+        "-parse-first-line",
+        "-no-parse-first-line",
+        "-progname",
+        "-shell-escape",
+        "-no-shell-escape",
+        "-shell-restricted",
+        "-src-specials",
+        "-synctex",
+        "-translate-file",
+        "-8bit",
+        # MiKTeX
+        "-alias",
+        "-buf-size",
+        "-c-style-errors",
+        "-no-c-style-errors",
+        "-disable-installer",
+        "-enable-installer",
+        "-disable-pipes",
+        "-enable-pipes",
+        "-disable-write18",
+        "-enable-write18",
+        "-restrict-write18",
+        "-dont-parse-first-line",
+        "-enable-enctex",
+        "-enable-mltex",
+        "-error-line",
+        "-extra-mem-bot",
+        "-extra-mem-top",
+        "-font-max",
+        "-font-mem-size",
+        "-half-error-line",
+        "-hash-extra",
+        "-job-time",
+        "-main-memory",
+        "-max-in-open",
+        "-max-print-line",
+        "-max-strings",
+        "-nest-size",
+        "-param-size",
+        "-pool-size",
+        "-record-package-usages",
+        "-save-size",
+        "-stack-size",
+        "-string-vacancies",
+        "-tcx",
+        "-time-statistics",
+        "-trace",
+        "-trie-size",
+        "-undump",
+    }
+)
+
 _HELP = """\
 Usage: latexmk [options] [file ...]
 
@@ -340,6 +411,10 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
                 flags.pretex = val_str
             case "-usepretex":
                 flags.pretex = val_str if has_val else ""
+            case "-latexoption":
+                if not has_val:
+                    val_str, i = _take(argv, i, flag)
+                build = replace(build, latex_extra_options=(*build.latex_extra_options, val_str))
             # ── preview / print ───────────────────────────────────────────
             case "-pv":
                 flags.preview_mode = True
@@ -441,7 +516,10 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
             case "-showextraoptions":
                 flags.want_showextraoptions = True
             case _:
-                raise BadOptionsError(f"latexmk: unknown option {raw!r}")
+                if flag in _PASSTHROUGH_FLAGS:
+                    build = replace(build, latex_extra_options=(*build.latex_extra_options, raw))
+                else:
+                    raise BadOptionsError(f"latexmk: unknown option {raw!r}")
 
     cfg = replace(
         base,
@@ -560,16 +638,8 @@ def _run_clean(tex_files: list[Path], cfg: Config, *, cleanup_mode: int, cleanup
 # ── core logic ────────────────────────────────────────────────────────────────
 
 
-def _run(argv: list[str]) -> None:
-    """Parse *argv*, load config, apply overrides, dispatch."""
-    # Phase 1: extract -norc / -r before loading config
-    norc, extra_rc = _preparse(argv)
-    cfg, _loaded = load_config(norc=norc, extra_rc_files=extra_rc)
-
-    # Phase 2: full parse on top of loaded config
-    cfg, flags, tex_args = _parse(argv, cfg)
-
-    # Immediate-exit info flags (checked before file resolution)
+def _dispatch_info_flags(flags: _Flags, cfg: Config) -> None:
+    """Handle immediate-exit diagnostic flags; exits if any flag is active."""
     if flags.want_help:
         _print_help()
         sys.exit(0)
@@ -577,7 +647,9 @@ def _run(argv: list[str]) -> None:
         _out(f"latexmk version {PERL_LATEXMK_VERSION}{_python_version_suffix()}")
         sys.exit(0)
     if flags.want_showextraoptions:
-        _out("No extra *latex passthrough options are defined.")
+        _out("Options forwarded to *latex (not interpreted by latexmk):\n")
+        for opt in sorted(_PASSTHROUGH_FLAGS):
+            _out(f"  {opt}")
         sys.exit(0)
     if flags.want_commands:
         _print_commands(cfg)
@@ -587,6 +659,18 @@ def _run(argv: list[str]) -> None:
         sys.exit(0)
     if flags.dir_report:
         _print_dirs(cfg)
+
+
+def _run(argv: list[str]) -> None:
+    """Parse *argv*, load config, apply overrides, dispatch."""
+    # Phase 1: extract -norc / -r before loading config
+    norc, extra_rc = _preparse(argv)
+    cfg, _loaded = load_config(norc=norc, extra_rc_files=extra_rc)
+
+    # Phase 2: full parse on top of loaded config
+    cfg, flags, tex_args = _parse(argv, cfg)
+
+    _dispatch_info_flags(flags, cfg)
 
     tex_files = _resolve_tex_files(tex_args, cfg)
 

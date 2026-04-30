@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T19 — TeX engine passthrough options
-**Task file:** [`ai/T19-passthrough-options.md`](./ai/T19-passthrough-options.md)
+**Current task:** T20 — Landscape mode (`-l`)
+**Task file:** [`ai/T20-landscape.md`](./ai/T20-landscape.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.
@@ -20,7 +20,7 @@ Task order: T01 → T02 → T03 → T04 → T05 → T06 → T07 → T08 → T09 
 
 ## 1. Goal
 
-Re-implement `latexmk.pl` in Python with **zero runtime third-party dependencies** (stdlib only). Match Perl's user-visible behavior. Document divergences in `CHANGES.md`.
+Re-implement `latexmk.pl` in Python with **zero runtime third-party dependencies** (stdlib only). Match Perl's user-visible behavior. Document divergences in `CHANGELOG.md`.
 
 Runtime: `python >= 3.13`. Dev tooling may use third-party packages.
 
@@ -91,7 +91,7 @@ def parse_fls(path: Path) -> FlsResult:
 - Fixtures: `tests/fixtures/<category>/`
 - Target ≥ 90% line coverage on `src/latexmk_py/` (excluding `cli.py` and `__main__.py`)
 - Differential vs Perl: `LATEXMK_PERL=/usr/bin/latexmk uv run pytest tests/integration/test_diff.py`
-- Perl bug that we diverge from: write a test, document in `CHANGES.md`, add to `known_divergences.py`
+- Perl bug that we diverge from: write a test, document in `CHANGELOG.md`, add to `known_divergences.py`
 
 ## 6. CI Gates
 
@@ -112,7 +112,7 @@ Red CI blocks merge.
 4. Write or update tests first. Use fixtures for inputs > ~5 lines.
 5. Implement in small, type-clean increments.
 6. Run the full local pipeline (§3).
-7. Update `CHANGES.md` with a one-line user-facing summary.
+7. Update `CHANGELOG.md` with a one-line user-facing summary.
 8. Commit: `feat(parser): port parse_fls` / `fix(rules): handle epstopdf cusdep` / `chore(deps): bump ruff`. No LLM attribution in commit messages (no `Co-Authored-By:` or similar lines).
 9. Mark task `done`: update §0, the task file, and the `PLAN.md` table. Advance to next task.
 
@@ -138,6 +138,6 @@ No output-byte-identity with Perl latexmk except `--help`, `--version`, `-comman
 
 1. Re-read `PLAN.md` and the relevant `latexmk.1` section.
 2. Check `latexmk.pl` for the subroutine; obey its semantics over your intuition.
-3. Perl genuinely buggy: write a test, document under "Intentional divergences" in `CHANGES.md`, proceed.
+3. Perl genuinely buggy: write a test, document under "Intentional divergences" in `CHANGELOG.md`, proceed.
 4. Still unsure: leave `TODO(name): question` and open a discussion. Don't silently guess.
 

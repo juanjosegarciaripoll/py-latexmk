@@ -1,5 +1,5 @@
 # T19: TeX Engine Passthrough Options
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T18
 
 ## Goal

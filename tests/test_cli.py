@@ -467,3 +467,49 @@ def test_flags_defaults() -> None:
     assert flags.go_mode == 0
     assert flags.preview_continuous is False
     assert flags.verbose is False
+
+
+# ── T19: passthrough options ──────────────────────────────────────────────────
+
+
+def test_synctex_accepted_and_forwarded() -> None:
+    opts = _cfg(["-synctex=1"]).build.latex_extra_options
+    assert "-synctex=1" in opts
+
+
+def test_file_line_error_bare_accepted() -> None:
+    opts = _cfg(["-file-line-error"]).build.latex_extra_options
+    assert "-file-line-error" in opts
+
+
+def test_max_print_line_accepted() -> None:
+    opts = _cfg(["-max-print-line=200"]).build.latex_extra_options
+    assert "-max-print-line=200" in opts
+
+
+def test_latexoption_appends() -> None:
+    opts = _cfg(["-latexoption=-shell-escape"]).build.latex_extra_options
+    assert "-shell-escape" in opts
+
+
+def test_latexoption_space_form() -> None:
+    opts = _cfg(["-latexoption", "-shell-escape"]).build.latex_extra_options
+    assert "-shell-escape" in opts
+
+
+def test_output_format_pdfxe_sets_pdf_mode_5() -> None:
+    assert _cfg(["-output-format=pdfxe"]).build.pdf_mode == 5
+
+
+def test_unknown_flag_still_raises() -> None:
+    with pytest.raises(BadOptionsError, match="unknown option"):
+        _parse(["-totally-not-a-real-option"], Config())
+
+
+def test_showextraoptions_lists_flags(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        _run(["-showextraoptions"])
+    assert exc_info.value.code == 0
+    out = capsys.readouterr().out
+    assert "-synctex" in out
+    assert "-file-line-error" in out

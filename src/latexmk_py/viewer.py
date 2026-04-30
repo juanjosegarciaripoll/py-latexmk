@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
     from latexmk_py.config import Config
 
-_WINDOWS_CREATION_FLAGS = (
-    getattr(subprocess, "DETACHED_PROCESS", 0)
-    | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+_WINDOWS_CREATION_FLAGS = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(
+    subprocess, "CREATE_NEW_PROCESS_GROUP", 0
 )
 
 
