@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 from typing import Literal
 
-from latexmk_py.config import BuildConfig, Config, DirectoriesConfig
+from latexmk_py.config import BuildConfig, CommandsConfig, Config, DirectoriesConfig
 from latexmk_py.fdb import FdbFileEntry, FdbRule
 from latexmk_py.rules import Rule, compute_md5, init_rules, out_of_date, topo_sort
 
@@ -400,3 +400,35 @@ def test_topo_sort_mode2_chain_order() -> None:
     names = [r.name for r in sorted_rules]
     assert names.index("latex") < names.index("dvips")
     assert names.index("latex") < names.index("ps2pdf")
+
+
+# ---------------------------------------------------------------------------
+# T20: landscape mode — dvips command selection
+# ---------------------------------------------------------------------------
+
+
+def test_landscape_mode2_dvips_uses_landscape_cmd() -> None:
+    cfg = Config(
+        build=BuildConfig(pdf_mode=2, landscape=True),
+        commands=CommandsConfig(dvips_landscape="dvips -tlandscape %O -o %D %S"),
+    )
+    by_name = {r.name: r for r in init_rules(_TEX, cfg)}
+    assert by_name["dvips"].command == "dvips -tlandscape %O -o %D %S"
+
+
+def test_portrait_mode2_dvips_uses_default_cmd() -> None:
+    cfg = Config(
+        build=BuildConfig(pdf_mode=2, landscape=False),
+        commands=CommandsConfig(dvips="dvips %O -o %D %S"),
+    )
+    by_name = {r.name: r for r in init_rules(_TEX, cfg)}
+    assert by_name["dvips"].command == "dvips %O -o %D %S"
+
+
+def test_landscape_ps_mode_dvips_uses_landscape_cmd() -> None:
+    cfg = Config(
+        build=BuildConfig(pdf_mode=0, dvi_mode=0, postscript_mode=1, landscape=True),
+        commands=CommandsConfig(dvips_landscape="dvips -tlandscape %O -o %D %S"),
+    )
+    by_name = {r.name: r for r in init_rules(_TEX, cfg)}
+    assert by_name["dvips"].command == "dvips -tlandscape %O -o %D %S"

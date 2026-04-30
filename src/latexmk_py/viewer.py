@@ -9,7 +9,7 @@ import shlex
 import subprocess
 from typing import TYPE_CHECKING
 
-from latexmk_py.platform import default_viewer, is_windows
+from latexmk_py.platform import default_viewer, is_macos, is_windows
 from latexmk_py.runner import expand_placeholders
 
 if TYPE_CHECKING:
@@ -24,14 +24,23 @@ _WINDOWS_CREATION_FLAGS = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(
 
 def _viewer_command_template(output: Path, cfg: Config) -> str:
     suffix = output.suffix.lower()
+    p = cfg.preview
     if suffix == ".pdf":
-        template = cfg.preview.pdf_previewer
+        template = p.pdf_previewer
     elif suffix == ".dvi":
-        template = cfg.preview.dvi_previewer
+        if cfg.build.landscape and p.dvi_previewer_landscape != "auto":
+            template = p.dvi_previewer_landscape
+        else:
+            template = p.dvi_previewer
+            if template == "auto" and cfg.build.landscape and not (is_windows() or is_macos()):
+                template = "start xdvi -paper usr %O %S"
     elif suffix == ".ps":
-        template = cfg.preview.ps_previewer
+        if cfg.build.landscape and p.ps_previewer_landscape != "auto":
+            template = p.ps_previewer_landscape
+        else:
+            template = p.ps_previewer
     else:
-        template = cfg.preview.pdf_previewer
+        template = p.pdf_previewer
     return default_viewer("pdf") if template == "auto" else template
 
 

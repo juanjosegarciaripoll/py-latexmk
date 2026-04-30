@@ -8,8 +8,8 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 ## 0. Active Task
 
 <!-- AGENTS: update this block when starting or finishing a task -->
-**Current task:** T20 — Landscape mode (`-l`)
-**Task file:** [`ai/T20-landscape.md`](./ai/T20-landscape.md)
+**Current task:** T21 — Print support (`-p`, `-print`)
+**Task file:** [`ai/T21-print.md`](./ai/T21-print.md)
 **Status:** `todo`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.

@@ -189,7 +189,7 @@ GitHub Releases. Source-install fallback remains supported.
 | T17 | Integration tests | `done` |
 | T18 | Release distribution (Windows binaries + release automation) | `done` |
 | T19 | TeX engine passthrough options + `-latexoption` + `-showextraoptions` | `done` |
-| T20 | Landscape mode (`-l`) | `todo` |
+| T20 | Landscape mode (`-l`) | `done` |
 | T21 | Print support (`-p`, `-print`) | `todo` |
 | T22 | Small missing options (warning aliases, bibtex crossrefs, XDV mode) | `todo` |
 

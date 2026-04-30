@@ -146,6 +146,7 @@ Processing:
   -pretex=CODE / -usepretex[=CODE]
 
 Preview:
+  -l / -l-           Landscape mode on/off
   -pv                Open viewer after build
   -pvc / -pvc-       Continuous preview on/off
   -view=WHAT         What to view: default/pdf/dvi/ps/none
@@ -415,6 +416,10 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
                 if not has_val:
                     val_str, i = _take(argv, i, flag)
                 build = replace(build, latex_extra_options=(*build.latex_extra_options, val_str))
+            case "-l":
+                build = replace(build, landscape=True)
+            case "-l-":
+                build = replace(build, landscape=False)
             # ── preview / print ───────────────────────────────────────────
             case "-pv":
                 flags.preview_mode = True

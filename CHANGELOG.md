@@ -4,6 +4,9 @@ All notable user-facing changes to this project are documented in this file.
 
 ## Unreleased
 
+- Added `-l` / `-l-` flags for landscape mode; selects `dvips_landscape` command
+  and platform-appropriate DVI viewer (`xdvi -paper usr` on Unix).
+
 - CLI now accepts TeX engine passthrough flags (`-synctex`, `-file-line-error`,
   `-shell-escape`, `-max-print-line`, and ~40 others from latexmk.pl lines 549–668)
   and forwards them to `*latex` via `latex_extra_options`.

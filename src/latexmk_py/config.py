@@ -32,6 +32,7 @@ class BuildConfig:
     max_runs: int = 10
     cd: bool = False
     jobname: str = ""
+    landscape: bool = False
     latex_extra_options: tuple[str, ...] = ()
     default_files: tuple[str, ...] = ("*.tex",)
     default_excluded_files: tuple[str, ...] = ()
@@ -50,6 +51,7 @@ class CommandsConfig:
     biber: str = "biber %O %S"
     makeindex: str = "makeindex %O -o %D %S"
     dvips: str = "dvips %O -o %D %S"
+    dvips_landscape: str = "dvips -tlandscape %O -o %D %S"
     dvipdf: str = "dvipdf %O %S %D"
     ps2pdf: str = "ps2pdf %O %S %D"
     xdvipdfmx: str = "xdvipdfmx -E -o %D %O %S"
@@ -88,6 +90,8 @@ class PreviewConfig:
     pdf_previewer: str = "auto"
     dvi_previewer: str = "auto"
     ps_previewer: str = "auto"
+    dvi_previewer_landscape: str = "auto"
+    ps_previewer_landscape: str = "auto"
 
 
 @dataclass(slots=True, frozen=True)

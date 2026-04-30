@@ -513,3 +513,23 @@ def test_showextraoptions_lists_flags(capsys: pytest.CaptureFixture[str]) -> Non
     out = capsys.readouterr().out
     assert "-synctex" in out
     assert "-file-line-error" in out
+
+
+# ── T20: landscape flags ──────────────────────────────────────────────────────
+
+
+def test_landscape_flag_sets_true() -> None:
+    assert _cfg(["-l"]).build.landscape is True
+
+
+def test_landscape_minus_flag_sets_false() -> None:
+    assert _cfg(["-l-"]).build.landscape is False
+
+
+def test_landscape_default_is_false() -> None:
+    assert Config().build.landscape is False
+
+
+def test_landscape_toggle() -> None:
+    assert _cfg(["-l", "-l-"]).build.landscape is False
+    assert _cfg(["-l-", "-l"]).build.landscape is True

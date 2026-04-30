@@ -1,5 +1,5 @@
 # T20: Landscape Mode
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T19
 
 ## Goal
@@ -87,10 +87,10 @@ Add to `_HELP` in `cli.py`:
 - when `landscape=True`, the dvips rule uses `dvips_landscape` command template
 
 ## Checklist
-- [ ] `BuildConfig.landscape` field; `CommandsConfig.dvips_landscape`
-- [ ] `-l` / `-l-` CLI flags
-- [ ] TOML `landscape` and `dvips_landscape` keys loaded
-- [ ] dvips rule uses `dvips_landscape` when `landscape=True`
-- [ ] Landscape viewer logic in `viewer.py`
-- [ ] Help text updated
-- [ ] Tests pass; type-clean
+- [x] `BuildConfig.landscape` field; `CommandsConfig.dvips_landscape`
+- [x] `-l` / `-l-` CLI flags
+- [x] TOML `landscape` and `dvips_landscape` keys loaded
+- [x] dvips rule uses `dvips_landscape` when `landscape=True`
+- [x] Landscape viewer logic in `viewer.py`
+- [x] Help text updated
+- [x] Tests pass; type-clean

@@ -114,10 +114,11 @@ def _make_special_mode_rules(tex: Path, cfg: Config) -> list[Rule]:
         dvi = _out(stem, ".dvi", d.out_dir)
         ps_ = _out(stem, ".ps", d.out_dir)
         base = Path(stem)
+        dvips_cmd = c.dvips_landscape if cfg.build.landscape else c.dvips
         return [
             Rule(name="latex", kind="primary", command=c.latex, source=tex, dest=dvi, base=base),
             Rule(
-                name="dvips", kind="postprocess", command=c.dvips, source=dvi, dest=ps_, base=base
+                name="dvips", kind="postprocess", command=dvips_cmd, source=dvi, dest=ps_, base=base
             ),
         ]
     if cfg.build.xdv_mode:
@@ -173,6 +174,7 @@ def init_rules(
         ps_ = _out(stem, ".ps", d.out_dir)
         pdf = _out(stem, ".pdf", d.out_dir)
         base = Path(stem)
+        dvips_cmd = c.dvips_landscape if cfg.build.landscape else c.dvips
         rules.extend(
             [
                 Rule(
@@ -181,7 +183,7 @@ def init_rules(
                 Rule(
                     name="dvips",
                     kind="postprocess",
-                    command=c.dvips,
+                    command=dvips_cmd,
                     source=dvi,
                     dest=ps_,
                     base=base,
