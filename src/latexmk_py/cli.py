@@ -602,7 +602,21 @@ def _python_version_suffix() -> str:
 def _resolve_tex_files(pos_args: list[str], cfg: Config) -> list[Path]:
     """Return .tex file paths from positional args or config glob patterns."""
     if pos_args:
-        paths = [Path(f) for f in pos_args]
+        # Mirrors find_basename in latexmk.pl (lines 4317-4321).
+        # Rule 1: ext==.tex and file exists → use as-is.
+        # Rule 2: file.tex exists (regardless of ext) → use file.tex.
+        # Rule 3: file exists with any extension → use as-is.
+        # Uses is_file() to match Perl's -f (regular file, not directory).
+        def _resolve_one(s: str) -> Path:
+            p = Path(s)
+            if p.suffix == ".tex" and p.is_file():  # rule 1
+                return p
+            tex = Path(str(p) + ".tex")
+            if tex.is_file():  # rule 2
+                return tex
+            return p  # rule 3 / not found (caught below)
+
+        paths = [_resolve_one(f) for f in pos_args]
         missing = [p for p in paths if not p.exists()]
         if missing:
             names = ", ".join(str(p) for p in missing)
@@ -738,12 +752,26 @@ def _setup_logging() -> None:
         logging.root.setLevel(logging.DEBUG)
 
 
+_log = logging.getLogger(__name__)
+
+
+def _log_invocation() -> None:
+    """Emit one DEBUG line describing how latexmk was invoked."""
+    _log.debug(
+        "invoked: binary=%s cwd=%s args=%r",
+        sys.argv[0],
+        Path.cwd(),
+        sys.argv[1:],
+    )
+
+
 def main() -> None:
     """Parse args, load config, dispatch.
 
     Mirrors ``main`` in ``latexmk.pl`` (lines ~1-100).
     """
     _setup_logging()
+    _log_invocation()
     try:
         _run(sys.argv[1:])
     except BadOptionsError as exc:

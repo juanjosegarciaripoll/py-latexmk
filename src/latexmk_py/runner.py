@@ -7,6 +7,7 @@ Mirrors the command-template system in latexmk.pl (~lines 2900-3100).
 
 from __future__ import annotations
 
+import logging
 import re
 import shlex
 import subprocess
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from latexmk_py.errors import BuildError
+
+log = logging.getLogger(__name__)
 
 # Shell metacharacters that force shell=True.
 # Negative lookbehind skips backslash-escaped occurrences.
@@ -75,8 +78,16 @@ def expand_placeholders(
     result = _substitute_path(result, "%B", source.stem)
     result = _substitute_path(result, "%R", root.stem)
     result = _substitute_path(result, "%T", str(main_tex))
-    # %O is already shell-quoted via shlex.join; no further quoting applied.
-    result = result.replace("%O", shlex.join(extra_opts))
+    # %O: use platform-appropriate quoting so paths with spaces survive.
+    # On Windows CreateProcess parses the command string with CommandLineToArgvW,
+    # which only understands double-quote escaping; shlex.join produces POSIX
+    # single-quote escaping that CommandLineToArgvW treats as plain characters.
+    opts_str = (
+        subprocess.list2cmdline(list(extra_opts))
+        if sys.platform == "win32"
+        else shlex.join(extra_opts)
+    )
+    result = result.replace("%O", opts_str)
     result = _substitute_path(result, "%Y", (aux_dir + "/") if aux_dir else "")
     return _substitute_path(result, "%Z", (out_dir + "/") if out_dir else "")
 
@@ -128,6 +139,7 @@ def run_command(
     else:
         cmd = shlex.split(cmd_str)
 
+    log.debug("Running: %s", cmd_str)
     t0 = time.monotonic()
     try:
         proc = subprocess.run(  # noqa: S603
@@ -142,6 +154,7 @@ def run_command(
     except subprocess.TimeoutExpired as exc:
         raise BuildError(f"latexmk: command timed out: {cmd_str}") from exc
     elapsed = time.monotonic() - t0
+    log.debug("Finished (exit=%d, %.2fs): %s", proc.returncode, elapsed, cmd_str)
 
     return RunResult(
         exit_code=proc.returncode,
