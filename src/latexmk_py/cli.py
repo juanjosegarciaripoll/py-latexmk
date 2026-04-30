@@ -202,7 +202,7 @@ class _Flags:
     preview_mode: bool = False
     preview_continuous: bool = False
     print_mode: bool = False
-    print_what: str = "ps"
+    print_what: str | None = None  # None means not explicitly set; resolved from config default
     cleanup_mode: int = 0
     cleanup_fdb: bool = False
     go_mode: int = 0  # 0=normal 1=-g 2=-gg 3=-gt
@@ -702,6 +702,9 @@ def _run(argv: list[str]) -> None:
 
     cfg = replace(cfg, preview_mode=flags.preview_mode or flags.preview_continuous)
 
+    if flags.print_what is not None:
+        cfg = replace(cfg, output=replace(cfg.output, print_type=flags.print_what))
+
     # Pure cleanup: -c / -C / -CF without -gg
     if (flags.cleanup_mode > 0 or flags.cleanup_fdb) and flags.go_mode != _GO_CLEAN_REBUILD:
         _run_clean(tex_files, cfg, cleanup_mode=flags.cleanup_mode, cleanup_fdb=flags.cleanup_fdb)
@@ -715,6 +718,11 @@ def _run(argv: list[str]) -> None:
         _run_watch(tex_files, cfg)
     else:
         _run_build(tex_files, cfg)
+        if flags.print_mode:
+            from latexmk_py.printer import print_output  # noqa: PLC0415
+
+            for f in tex_files:
+                print_output(f, cfg)
 
 
 # ── entry point ───────────────────────────────────────────────────────────────

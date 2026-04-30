@@ -122,6 +122,7 @@ class OutputConfig:
     max_logfile_warnings: int = 7
     warnings_as_errors: bool = False
     rc_report: bool = True
+    print_type: str = "auto"  # "auto" | "dvi" | "ps" | "pdf" | "none"
 
 
 @dataclass(slots=True, frozen=True)
@@ -297,6 +298,11 @@ def _validate(cfg: Config) -> None:
     if cfg.preview.view not in {"default", "pdf", "dvi", "ps", "none"}:
         raise ConfigError(
             f"latexmk: preview.view must be default/pdf/dvi/ps/none, got {cfg.preview.view!r}"
+        )
+    if cfg.output.print_type not in {"auto", "dvi", "ps", "pdf", "none"}:
+        raise ConfigError(
+            f"latexmk: output.print_type must be auto/dvi/ps/pdf/none,"
+            f" got {cfg.output.print_type!r}"
         )
     for cd in cfg.custom_deps:
         if not cd.from_ext or not cd.to_ext or not cd.command:

@@ -1,5 +1,5 @@
 # T21: Print Support (-p, -print)
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T19
 
 ## Goal

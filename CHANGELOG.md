@@ -4,6 +4,10 @@ All notable user-facing changes to this project are documented in this file.
 
 ## Unreleased
 
+- Added `-p` (print after build) and `-print=WHAT` (dvi/ps/pdf/auto) flags; the
+  `[output] print_type` and `[commands] print_pdf/print_ps/print_dvi` TOML keys
+  configure the print command. Commands prefixed with `NONE` are skipped with a warning.
+
 - Added `-l` / `-l-` flags for landscape mode; selects `dvips_landscape` command
   and platform-appropriate DVI viewer (`xdvi -paper usr` on Unix).
 
