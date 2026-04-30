@@ -487,6 +487,22 @@ def test_max_print_line_accepted() -> None:
     assert "-max-print-line=200" in opts
 
 
+def test_double_dash_passthrough_normalized() -> None:
+    # latexmk.pl line 2038: s/^--/-/ — double-dash is equivalent to single-dash
+    opts = _cfg(["--max-print-line=10000"]).build.latex_extra_options
+    assert "--max-print-line=10000" in opts
+
+
+def test_double_dash_bare_passthrough() -> None:
+    opts = _cfg(["--file-line-error"]).build.latex_extra_options
+    assert "--file-line-error" in opts
+
+
+def test_double_dash_synctex() -> None:
+    opts = _cfg(["--synctex=1"]).build.latex_extra_options
+    assert "--synctex=1" in opts
+
+
 def test_latexoption_appends() -> None:
     opts = _cfg(["-latexoption=-shell-escape"]).build.latex_extra_options
     assert "-shell-escape" in opts

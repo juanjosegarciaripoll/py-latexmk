@@ -274,12 +274,16 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
             tex_files.append(raw)
             continue
 
+        # Mirror latexmk.pl line 2038: s/^--/-/
+        # Normalize double-dash prefix for matching; pass raw to *latex.
+        normalized = "-" + raw[2:] if raw.startswith("--") else raw
+
         # Split -flagname=value only when the part before '=' is a valid flag name.
-        if _OPT_ASSIGN.match(raw):
-            flag, val_str = raw.split("=", 1)
+        if _OPT_ASSIGN.match(normalized):
+            flag, val_str = normalized.split("=", 1)
             has_val = True
         else:
-            flag, val_str, has_val = raw, "", False
+            flag, val_str, has_val = normalized, "", False
 
         match flag:
             # ── output format ─────────────────────────────────────────────
