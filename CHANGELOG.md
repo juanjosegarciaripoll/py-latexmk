@@ -2,8 +2,7 @@
 
 All notable user-facing changes to this project are documented in this file.
 
-## Unreleased
-
+## 0.3.0 — 2026-04-30
 - Added `-logfilewarninglist` / `-logfilewarninglist-` as aliases for
   `-logfilewarnings` / `-logfilewarnings-` (latexmk.pl lines 2137–2140).
 - Added `-bibtex-min-crossrefs=N` CLI flag and `[bibtex] min_crossrefs`
