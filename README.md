@@ -10,20 +10,22 @@ Download `latexmk.exe` from this repository's GitHub Releases, place it in a
 directory on `PATH`, then verify:
 
 ```powershell
-latexmk --version
+latexmk -version
 ```
 
-### Install from source (Python 3.13+)
+### Install from source (using uv)
 
-```bash
-pip install .
-latexmk --version
+We assume you have installed `uv` from [astral-sh](https://docs.astral.sh/uv/)
+and configured Python tools to be available. On Windows you can do this with
+two steps:
+```powershell
+winget install astral-sh.uv
+uv tool update-shell
 ```
 
-Or:
-
-```bash
-uv tool install .
+Then you can install the tool directly from GitHub
+```powershell
+uv tool install git+https://github.com/juanjosegarciaripoll/py-latexmk
 latexmk --version
 ```
 
