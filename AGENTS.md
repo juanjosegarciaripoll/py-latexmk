@@ -10,7 +10,7 @@ Spec: [`PLAN.md`](./PLAN.md). Task files: [`ai/`](./ai/). Reference impl: [`late
 <!-- AGENTS: update this block when starting or finishing a task -->
 **Current task:** T22 — Small missing options (warning aliases, bibtex crossrefs, XDV mode)
 **Task file:** [`ai/T22-small-options.md`](./ai/T22-small-options.md)
-**Status:** `todo`
+**Status:** `done`
 
 Before starting: read `PLAN.md` for overall structure, then the task file above (interfaces, requirements, checklist). Read `ai/config-schema.md` if the task touches configuration. Verify all **Depends on** tasks are `done`.
 

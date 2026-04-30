@@ -1,5 +1,5 @@
 # T22: Small Missing Options
-**Status:** `todo`
+**Status:** `done`
 **Depends on:** T19
 
 ## Goal

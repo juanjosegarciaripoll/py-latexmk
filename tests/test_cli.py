@@ -362,6 +362,34 @@ def test_logfilewarnings_flag() -> None:
     assert _fls(["-logfilewarnings"]).log_warnings is True
 
 
+def test_logfilewarninglist_aliases() -> None:
+    assert _fls(["-logfilewarninglist"]).log_warnings is True
+    assert _fls(["-logfilewarnings"]).log_warnings is True
+    assert _fls(["-logfilewarninglist-"]).log_warnings is False
+    assert _fls(["-logfilewarnings-"]).log_warnings is False
+
+
+def test_bibtex_min_crossrefs_flag() -> None:
+    assert _cfg(["-bibtex-min-crossrefs=2"]).bibtex.min_crossrefs == 2
+    assert _cfg(["-bibtex-min-crossrefs", "5"]).bibtex.min_crossrefs == 5
+
+
+def test_bibtex_min_crossrefs_bad_value() -> None:
+    with pytest.raises(BadOptionsError, match="integer"):
+        _parse(["-bibtex-min-crossrefs=foo"], Config())
+
+
+def test_xdv_flag() -> None:
+    cfg = _cfg(["-xdv"])
+    assert cfg.build.xdv_mode == 1
+    assert cfg.build.pdf_mode == 0
+
+
+def test_xdv_disable_flag() -> None:
+    cfg = _cfg(["-xdv", "-xdv-"])
+    assert cfg.build.xdv_mode == 0
+
+
 # ── config control ────────────────────────────────────────────────────────────
 
 

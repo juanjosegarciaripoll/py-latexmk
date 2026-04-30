@@ -538,12 +538,16 @@ def test_mock_build_with_bibtex_secondary(tmp_path: Path) -> None:
 
     run_calls: list[str] = []
 
-    def _fake(cmd: str, *, dest: Path, **__: object) -> RunResult:
+    def _fake(cmd: str, *, dest: Path, cwd: Path | None = None, **__: object) -> RunResult:
         run_calls.append(cmd)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(b"%PDF-1.4 fake")
         if "bibtex" in cmd:
+            # bibtex dest is relative (secondary rules run with cwd=tex.parent);
+            # write bbl via the known absolute path to avoid polluting CWD.
             bbl.write_bytes(b"\\bibitem{ref1}")
+        else:
+            abs_dest = (cwd / dest) if (cwd is not None and not dest.is_absolute()) else dest
+            abs_dest.parent.mkdir(parents=True, exist_ok=True)
+            abs_dest.write_bytes(b"%PDF-1.4 fake")
         return RunResult(exit_code=0, stdout="", stderr="", elapsed=0.1)
 
     with (
@@ -561,6 +565,39 @@ def test_mock_build_with_bibtex_secondary(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # makeindex and makeglossaries detection — unit tests
 # ---------------------------------------------------------------------------
+
+
+def test_bibtex_min_crossrefs_in_extra_opts(tmp_path: Path) -> None:
+    """min_crossrefs>0 injects -min-crossrefs=N into bibtex rule's extra opts."""
+    tex = _make_tex(tmp_path)
+    cfg = Config(
+        directories=DirectoriesConfig(out_dir=str(tmp_path)),
+        bibtex=BibtexConfig(min_crossrefs=3),
+    )
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    rdb._add_secondary_rules(rdb.rules[0])  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    bibtex_rule = next(r for r in rdb.rules if r.name.startswith("bibtex_"))
+    opts = rdb._build_extra_opts(bibtex_rule)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert "-min-crossrefs=3" in opts
+
+
+def test_bibtex_min_crossrefs_zero_not_injected(tmp_path: Path) -> None:
+    """min_crossrefs=0 (default) does not add -min-crossrefs to bibtex opts."""
+    tex = _make_tex(tmp_path)
+    cfg = Config(directories=DirectoriesConfig(out_dir=str(tmp_path)))
+    rdb = RuleDatabase(tex, cfg)
+    rdb.rules = init_rules(tex, cfg)
+    rdb._rule_map = {r.name: r for r in rdb.rules}  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    (tmp_path / "doc.aux").write_text("\\bibdata{refs}\n", encoding="utf-8")
+    (tmp_path / "refs.bib").write_bytes(b"")
+    rdb._add_secondary_rules(rdb.rules[0])  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    bibtex_rule = next(r for r in rdb.rules if r.name.startswith("bibtex_"))
+    opts = rdb._build_extra_opts(bibtex_rule)  # noqa: SLF001  # type: ignore[reportPrivateUsage]
+    assert not any("min-crossrefs" in o for o in opts)
 
 
 def test_makeindex_rule_added_when_idx_exists(tmp_path: Path) -> None:

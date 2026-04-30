@@ -77,6 +77,7 @@ class BibtexConfig:
 
     use: float = 1.0  # 0, 1, 1.5, 2
     fudge: bool = True
+    min_crossrefs: int = 0  # 0 = do not pass -min-crossrefs (use bibtex default)
 
 
 @dataclass(slots=True, frozen=True)

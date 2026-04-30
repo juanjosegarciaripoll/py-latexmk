@@ -138,6 +138,7 @@ BibTeX/Biber:
   -bibtex / -bibtex- / -nobibtex   Force/disable BibTeX
   -bibtex-cond / -bibtex-cond1     Conditional BibTeX modes
   -bibtexfudge / -bibtexfudge- / -nobibtexfudge
+  -bibtex-min-crossrefs=N          Pass -min-crossrefs=N to bibtex
 
 Processing:
   -f / -f-           Force rebuild on/off
@@ -150,6 +151,7 @@ Processing:
 
 Preview:
   -l / -l-           Landscape mode on/off
+  -xdv / -xdv-       XDV-only output on/off (xelatex without xdvipdfmx)
   -pv                Open viewer after build
   -pvc / -pvc-       Continuous preview on/off
   -view=WHAT         What to view: default/pdf/dvi/ps/none
@@ -186,7 +188,7 @@ Diagnostics:
   -rc-report / -rc-report-
   -rules / -rules-
   -quiet / -silent   Suppress informational output
-  -logfilewarnings   Show warnings from log file
+  -logfilewarnings / -logfilewarninglist   Show warnings from log file
   -Werror            Treat warnings as errors
   -showextraoptions  List passthrough *latex options
 """
@@ -383,6 +385,15 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
                 bibtex = replace(bibtex, fudge=True)
             case "-bibtexfudge-" | "-nobibtexfudge":
                 bibtex = replace(bibtex, fudge=False)
+            case "-bibtex-min-crossrefs":
+                if not has_val:
+                    val_str, i = _take(argv, i, flag)
+                try:
+                    bibtex = replace(bibtex, min_crossrefs=int(val_str))
+                except ValueError:
+                    raise BadOptionsError(
+                        "latexmk: -bibtex-min-crossrefs requires an integer"
+                    ) from None
             case "-biber":
                 if has_val:
                     cmds = replace(cmds, biber=val_str)
@@ -427,6 +438,10 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
                 build = replace(build, landscape=True)
             case "-l-":
                 build = replace(build, landscape=False)
+            case "-xdv":
+                build = replace(build, xdv_mode=1, pdf_mode=0)
+            case "-xdv-":
+                build = replace(build, xdv_mode=0)
             # ── preview / print ───────────────────────────────────────────
             case "-pv":
                 flags.preview_mode = True
@@ -521,8 +536,10 @@ def _parse(argv: list[str], base: Config) -> tuple[Config, _Flags, list[str]]:  
                 flags.rules_list = False
             case "-quiet" | "-silent":
                 output = replace(output, silent=True)
-            case "-logfilewarnings":
+            case "-logfilewarninglist" | "-logfilewarnings":
                 flags.log_warnings = True
+            case "-logfilewarninglist-" | "-logfilewarnings-":
+                flags.log_warnings = False
             case "-Werror":
                 output = replace(output, warnings_as_errors=True)
             case "-showextraoptions":

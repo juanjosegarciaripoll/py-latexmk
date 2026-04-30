@@ -383,6 +383,23 @@ def test_topo_sort_same_kind_sorted_by_name() -> None:
     assert [r.name for r in topo_sort(rules)] == ["aa", "zz"]
 
 
+# ---------------------------------------------------------------------------
+# xdv_mode rules (T22)
+# ---------------------------------------------------------------------------
+
+
+def test_xdv_mode_produces_xelatex_only(tmp_path: Path) -> None:
+    """xdv_mode=1, pdf_mode=0: xelatex primary with .xdv dest; no xdvipdfmx."""
+    tex = tmp_path / "doc.tex"
+    tex.write_text("\\documentclass{article}\\begin{document}\\end{document}", encoding="utf-8")
+    cfg = Config(build=BuildConfig(xdv_mode=1, pdf_mode=0))
+    rules = init_rules(tex, cfg)
+    names = [r.name for r in rules]
+    assert names == ["xelatex"]
+    assert rules[0].dest.suffix == ".xdv"
+    assert not any(r.name == "xdvipdfmx" for r in rules)
+
+
 def test_topo_sort_preserves_all_rules() -> None:
     rules = [
         _rule("ps2pdf", "postprocess"),

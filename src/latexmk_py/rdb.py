@@ -148,6 +148,10 @@ class RuleDatabase:
         # latex_extra_options are for *latex only, not bibtex/biber/makeindex.
         if rule.kind in ("primary", "postprocess"):
             opts.extend(self.cfg.build.latex_extra_options)
+        if rule.kind == "secondary" and rule.name.startswith("bibtex_"):
+            n = self.cfg.bibtex.min_crossrefs
+            if n > 0:
+                opts.append(f"-min-crossrefs={n}")
         return opts
 
     def _rule_cwd(self, rule: Rule) -> Path | None:

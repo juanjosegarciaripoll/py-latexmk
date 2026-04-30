@@ -191,5 +191,5 @@ GitHub Releases. Source-install fallback remains supported.
 | T19 | TeX engine passthrough options + `-latexoption` + `-showextraoptions` | `done` |
 | T20 | Landscape mode (`-l`) | `done` |
 | T21 | Print support (`-p`, `-print`) | `done` |
-| T22 | Small missing options (warning aliases, bibtex crossrefs, XDV mode) | `todo` |
+| T22 | Small missing options (warning aliases, bibtex crossrefs, XDV mode) | `done` |
 

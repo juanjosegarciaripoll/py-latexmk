@@ -4,6 +4,13 @@ All notable user-facing changes to this project are documented in this file.
 
 ## Unreleased
 
+- Added `-logfilewarninglist` / `-logfilewarninglist-` as aliases for
+  `-logfilewarnings` / `-logfilewarnings-` (latexmk.pl lines 2137–2140).
+- Added `-bibtex-min-crossrefs=N` CLI flag and `[bibtex] min_crossrefs`
+  TOML key; passes `-min-crossrefs=N` to bibtex (latexmk.pl lines 2200–2205).
+- Added `-xdv` / `-xdv-` flags for XDV-only mode: xelatex runs but
+  xdvipdfmx is not invoked (latexmk.pl line 1405).
+
 - Added `-p` (print after build) and `-print=WHAT` (dvi/ps/pdf/auto) flags; the
   `[output] print_type` and `[commands] print_pdf/print_ps/print_dvi` TOML keys
   configure the print command. Commands prefixed with `NONE` are skipped with a warning.
