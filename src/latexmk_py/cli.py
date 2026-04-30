@@ -6,6 +6,8 @@ Mirrors the argument-parsing logic in latexmk.pl (lines ~500-900).
 
 from __future__ import annotations
 
+import logging
+import logging.handlers
 import re
 import sys
 from dataclasses import dataclass, replace
@@ -22,6 +24,7 @@ from latexmk_py.errors import (
     FileMissingError,
     LatexmkError,
 )
+from latexmk_py.platform import user_log_dir
 from latexmk_py.rdb import RuleDatabase
 
 PERL_LATEXMK_VERSION = "4.88"
@@ -702,12 +705,45 @@ def _run(argv: list[str]) -> None:
 
 # ── entry point ───────────────────────────────────────────────────────────────
 
+_LOG_MAX_BYTES = 512 * 1024  # 512 KB per file
+_LOG_BACKUP_COUNT = 2  # latexmk.log + latexmk.log.1 + latexmk.log.2
+
+
+def _setup_logging() -> None:
+    """Configure a rotating file handler for the root logger.
+
+    Writes to the platform log directory (up to 3 files, 512 KB each).
+    Silently skips if the directory cannot be created (e.g., read-only FS).
+    """
+    log_dir = user_log_dir()
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+
+    log_path = log_dir / "latexmk.log"
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_path,
+            maxBytes=_LOG_MAX_BYTES,
+            backupCount=_LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
+    except OSError:
+        return
+
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logging.root.addHandler(handler)
+    if logging.root.level == logging.WARNING:
+        logging.root.setLevel(logging.DEBUG)
+
 
 def main() -> None:
     """Parse args, load config, dispatch.
 
     Mirrors ``main`` in ``latexmk.pl`` (lines ~1-100).
     """
+    _setup_logging()
     try:
         _run(sys.argv[1:])
     except BadOptionsError as exc:

@@ -57,3 +57,21 @@ def system_config_dir() -> Path:
         base = Path(programdata) if programdata else Path(systemdrive) / "ProgramData"
         return base / "latexmk"
     return Path("/etc/latexmk")
+
+
+def user_log_dir() -> Path:
+    r"""Return the user-level latexmk log directory.
+
+    - Windows: ``%LOCALAPPDATA%\latexmk\logs``
+    - macOS:   ``~/Library/Logs/latexmk``
+    - Linux:   ``$XDG_STATE_HOME/latexmk`` (default ``~/.local/state/latexmk``)
+    """
+    if is_windows():
+        localappdata = os.environ.get("LOCALAPPDATA", "")
+        base = Path(localappdata) if localappdata else Path.home() / "AppData" / "Local"
+        return base / "latexmk" / "logs"
+    if is_macos():
+        return Path.home() / "Library" / "Logs" / "latexmk"
+    xdg = os.environ.get("XDG_STATE_HOME", "")
+    base = Path(xdg) if xdg else Path.home() / ".local" / "state"
+    return base / "latexmk"
